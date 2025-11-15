@@ -22,7 +22,6 @@ var embeddedWeb embed.FS
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
-	flag.IntVar(&port, "p", 8080, "Port to listen on (shorthand)")
 	flag.Parse()
 
 	addr := fmt.Sprintf(":%d", port)
