@@ -11,15 +11,15 @@ This project is a minimal Golang web server that:
 
 ## Build
 ```bash
-go build ./cmd/server
+go build ./cmd/shared-canvas-server
 ```
-This produces a single binary (named `server` or `server.exe` depending on your OS) with the web assets embedded.
+This produces a single binary (named `shared-canvas-server` or `shared-canvas-server.exe` depending on your OS) with the web assets embedded.
 
 ## Run
 ```bash
-./server -port 8080
+./shared-canvas-server -port 8080
 # or shorthand
-./server -p 8080
+./shared-canvas-server -p 8080
 ```
 Then open your browser at:
 ```
@@ -35,7 +35,7 @@ CLI options:
 - `GET /api/time` → `{ "now": "RFC3339Nano", "epoch": 173... }`
 
 ## Embedded Web UI
-The web UI is located under `cmd/server/web` and includes:
+The web UI is located under `cmd/shared-canvas-server/web` and includes:
 - `index.html`
 - `style.css`
 - `app.js`
@@ -45,7 +45,7 @@ These files are embedded into the binary via `//go:embed web/*` and served from 
 ## Project Layout
 ```
 cmd/
-  server/
+  shared-canvas-server/
     main.go       # server entrypoint, routes, embedding, graceful shutdown
     web/
       index.html

@@ -3,8 +3,8 @@ build: build-go
 
 .PHONY: build-go
 build-go:
-	go build ./cmd/server
+	go build ./cmd/shared-canvas-server
 
 .PHONY: run
 run:
-	./server
+	./shared-canvas-server
