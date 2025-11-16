@@ -1,25 +1,34 @@
-# Shared Canvas — Go Web Server with Embedded Assets
+# Shared Canvas — Go Web Server with Embedded SvelteKit (Svelte 5) SPA
 
 This project is a minimal Golang web server that:
-- Serves a small web UI (HTML/CSS/JS) compiled into the binary using `go:embed`.
-- Exposes REST API endpoints.
-- Allows configuring the listening port via CLI flag.
-- Shuts down gracefully on SIGINT/SIGTERM.
+- Serves a SvelteKit (Svelte 5) SPA compiled into the binary using `go:embed` (no runtime Node.js needed to run the binary)
+- Exposes REST API endpoints
+- Allows configuring the listening port via CLI flag
+- Shuts down gracefully on SIGINT/SIGTERM
 
 ## Requirements
 - Go 1.21+
+- Node.js 18+ (only required for building the frontend)
 
-## Build
+## Build (frontend + backend)
+Using Makefile (recommended):
 ```bash
+make build
+```
+This builds the Svelte SPA to `cmd/shared-canvas-server/web-dist/` and then compiles the Go server. The resulting binary is embedded with the SPA assets.
+
+Manual steps:
+```bash
+# 1) Build the SPA (outputs to cmd/shared-canvas-server/web-dist)
+(cd webapp && npm ci && npm run build)
+
+# 2) Build the Go server
 go build ./cmd/shared-canvas-server
 ```
-This produces a single binary (named `shared-canvas-server` or `shared-canvas-server.exe` depending on your OS) with the web assets embedded.
 
 ## Run
 ```bash
 ./shared-canvas-server -port 8080
-# or shorthand
-./shared-canvas-server -p 8080
 ```
 Then open your browser at:
 ```
@@ -34,23 +43,34 @@ CLI options:
 - `GET /api/health` → `{ "status": "ok", "service": "shared-canvas", "time": "RFC3339Nano" }`
 - `GET /api/time` → `{ "now": "RFC3339Nano", "epoch": 173... }`
 
-## Embedded Web UI
-The web UI is located under `cmd/shared-canvas-server/web` and includes:
-- `index.html`
-- `style.css`
-- `app.js`
-
-These files are embedded into the binary via `//go:embed web/*` and served from memory. Unknown non-API routes fall back to `index.html` (SPA-friendly behavior).
+## Frontend (Svelte 5 SPA)
+- Source: `webapp/` (Vite + Svelte)
+- Dev server:
+  ```bash
+  # Terminal A: run the Go API
+  go run ./cmd/shared-canvas-server -port 8080
+  # Terminal B: run SvelteKit dev server (with API proxy)
+  cd webapp && npm run dev
+  ```
+  SvelteKit dev server runs on http://localhost:5173 and proxies `/api/*` to http://localhost:8080.
+- Production build artifacts are written to `cmd/shared-canvas-server/web-dist/` and embedded into the Go binary.
+- Unknown non-API routes fall back to `index.html` (SPA routing).
 
 ## Project Layout
 ```
 cmd/
   shared-canvas-server/
-    main.go       # server entrypoint, routes, embedding, graceful shutdown
-    web/
-      index.html
-      style.css
-      app.js
+    main.go        # server entrypoint, routes, embedding, graceful shutdown
+    web-dist/      # built SPA assets (embedded)
+webapp/            # Svelte 5 app (Vite)
+  src/
+    App.svelte
+    routes/
+      Home.svelte
+      Health.svelte
+      Time.svelte
+  vite.config.ts
+  package.json
 ```
 
 ## Notes

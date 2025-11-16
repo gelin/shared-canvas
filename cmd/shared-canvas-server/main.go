@@ -16,12 +16,13 @@ import (
 	"time"
 )
 
-//go:embed web/*
+//go:embed web-dist/*
 var embeddedWeb embed.FS
 
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
+	flag.IntVar(&port, "p", 8080, "Port to listen on (shorthand)")
 	flag.Parse()
 
 	addr := fmt.Sprintf(":%d", port)
@@ -44,22 +45,22 @@ func main() {
 		})
 	})
 
-	// Static file server from embedded assets
+	// Static file server from embedded SPA build
 	fs := http.FS(embeddedWeb)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Clean path and map to embedded web directory
+		// Clean path and map to embedded web-dist directory
 		p := path.Clean(r.URL.Path)
 		if p == "/" || p == "." {
-			p = "/web/index.html"
+			p = "/web-dist/index.html"
 		} else {
-			p = "/web" + p
+			p = "/web-dist" + p
 		}
 
 		f, err := fs.Open(p)
 		if err != nil {
 			// Fallback to index.html for unknown routes (SPA support)
 			if !strings.HasPrefix(r.URL.Path, "/api/") {
-				if idx, err2 := fs.Open("/web/index.html"); err2 == nil {
+				if idx, err2 := fs.Open("/web-dist/index.html"); err2 == nil {
 					defer idx.Close()
 					http.ServeContent(w, r, "index.html", time.Time{}, idx)
 					return

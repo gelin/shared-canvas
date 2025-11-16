@@ -1,2 +1,7 @@
 .idea/
 /shared-canvas-server
+node_modules/
+webapp/node_modules/
+webapp/.svelte-kit/
+webapp/build/
+cmd/shared-canvas-server/web-dist/
