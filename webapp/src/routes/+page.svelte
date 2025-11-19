@@ -1,7 +1,24 @@
 <script lang="ts">
   // Home page - no special script needed
+import Canvas from "./Canvas.svelte";
 </script>
 
-<h2>Home</h2>
-<p>Welcome! This SvelteKit (Svelte 5) SPA calls the Go server's REST API.</p>
-<p>Use the navigation above to try the Health and Time endpoints.</p>
+<section class="card info">
+    <p>
+        Draw with the mouse on the canvas below.
+    </p>
+</section>
+
+<section class="card main">
+    <Canvas/>
+</section>
+
+<style>
+    .info {
+        font-size: 80%;
+        padding: 0 1rem;
+    }
+    .main {
+        margin-top: 1rem;
+    }
+</style>
