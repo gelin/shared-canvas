@@ -1,8 +1,12 @@
 .PHONY: build
 build: build-webapp build-server
 
+.PHONY: install-server
+install-server:
+	go mod download
+
 .PHONY: build-server
-build-server:
+build-server: install-server
 	go build ./cmd/shared-canvas-server
 
 .PHONY: install-webapp

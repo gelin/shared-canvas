@@ -43,6 +43,23 @@ CLI options:
 - `GET /api/health` → `{ "status": "ok", "service": "shared-canvas", "time": "RFC3339Nano" }`
 - `GET /api/time` → `{ "now": "RFC3339Nano", "epoch": 173... }`
 
+## WebSocket
+- Endpoint: `GET /ws` (upgrades to WebSocket)
+- Protocol: JSON messages `{ type: string, payload?: any, time?: string }`
+- Behavior: server sends an initial `{ type: "welcome", payload: { message: "connected" }, time }` then echoes back any JSON you send wrapped in `{ type: "ack", payload: <your message>, time }`.
+
+Dev usage:
+- Terminal A: `go run ./cmd/shared-canvas-server -port 8080`
+- Terminal B: `cd webapp && npm run dev`
+- Open http://localhost:5173/ws and click Connect. The dev server proxies `ws://localhost:5173/ws` → `http://localhost:8080/ws`.
+
+Production usage:
+- `make build` then run the binary (e.g., `./shared-canvas-server -p 8080`)
+- Open http://localhost:8080/ws and connect.
+
+Notes:
+- Go dependency used: `nhooyr.io/websocket`. If building manually the first time, run `go mod tidy` to fetch it.
+
 ## Frontend (Svelte 5 SPA)
 - Source: `webapp/` (Vite + Svelte)
 - Dev server:
