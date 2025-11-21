@@ -15,13 +15,19 @@
     let lineWidth = 3;
 
     onMount(() => {
-        mainContext = mainCanvas.getContext('2d');
+        mainContext = mainCanvas.getContext('2d', {
+            alpha: false,
+        });
         if (!mainContext) return;
+        // mainContext.imageSmoothingEnabled = false;
         mainContext.fillStyle = 'white';
         mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
 
-        drawContext = drawCanvas.getContext('2d');
+        drawContext = drawCanvas.getContext('2d', {
+            willReadFrequently: true,
+        });
         if (!drawContext) return;
+        // mainContext.imageSmoothingEnabled = false;
         drawContext.fillStyle = 'white';
         drawContext.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
         drawContext.strokeStyle = 'black';
