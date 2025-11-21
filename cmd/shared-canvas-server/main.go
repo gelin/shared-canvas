@@ -1,38 +1,20 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"strings"
 	"syscall"
 	"time"
-
-	"nhooyr.io/websocket"
 )
-
-//go:embed web-dist/*
-var embeddedWeb embed.FS
-
-type wsMessage struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload,omitempty"`
-	Time    string      `json:"time,omitempty"`
-}
 
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
-	flag.IntVar(&port, "p", 8080, "Port to listen on (shorthand)")
 	flag.Parse()
 
 	addr := fmt.Sprintf(":%d", port)
@@ -40,51 +22,13 @@ func main() {
 	mux := http.NewServeMux()
 
 	// WebSocket endpoint
-	mux.HandleFunc("/ws", wsHandler)
+	mux.HandleFunc("/socket", wsHandler)
 
 	// API routes
-	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"status":  "ok",
-			"service": "shared-canvas",
-			"time":    time.Now().Format(time.RFC3339Nano),
-		})
-	})
-
-	mux.HandleFunc("/api/time", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"now":   time.Now().Format(time.RFC3339Nano),
-			"epoch": time.Now().Unix(),
-		})
-	})
+	mux.HandleFunc("/health", healthHandler)
 
 	// Static file server from embedded SPA build
-	fs := http.FS(embeddedWeb)
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Clean path and map to embedded web-dist directory
-		p := path.Clean(r.URL.Path)
-		if p == "/" || p == "." {
-			p = "/web-dist/index.html"
-		} else {
-			p = "/web-dist" + p
-		}
-
-		f, err := fs.Open(p)
-		if err != nil {
-			// Fallback to index.html for unknown routes (SPA support)
-			if !strings.HasPrefix(r.URL.Path, "/api/") && !strings.HasPrefix(r.URL.Path, "/ws") {
-				if idx, err2 := fs.Open("/web-dist/index.html"); err2 == nil {
-					defer idx.Close()
-					http.ServeContent(w, r, "index.html", time.Time{}, idx)
-					return
-				}
-			}
-			http.NotFound(w, r)
-			return
-		}
-		defer f.Close()
-		http.ServeContent(w, r, path.Base(p), time.Time{}, f)
-	}))
+	mux.Handle("/", createEmbedHandler())
 
 	srv := &http.Server{Addr: addr, Handler: loggingMiddleware(mux)}
 
@@ -96,7 +40,7 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Wait for the interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
@@ -110,73 +54,6 @@ func main() {
 	log.Println("Server exiting")
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	// Optional origin check can be added here
-	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: true, // for demo; consider proper origin checks in production
-	})
-	if err != nil {
-		log.Printf("ws accept error: %v", err)
-		return
-	}
-	defer c.Close(websocket.StatusNormalClosure, "bye")
-
-	ctx := r.Context()
-
-	// Send a greeting message
-	send := wsMessage{Type: "welcome", Payload: map[string]any{"message": "connected"}, Time: time.Now().Format(time.RFC3339Nano)}
-	_ = writeWSJSON(ctx, c, send)
-
-	for {
-		var msg wsMessage
-		if err := readWSJSON(ctx, c, &msg); err != nil {
-			if websocket.CloseStatus(err) == websocket.StatusNormalClosure || websocket.CloseStatus(err) == websocket.StatusGoingAway {
-				return
-			}
-			log.Printf("ws read error: %v", err)
-			return
-		}
-		log.Printf("ws received: %v", msg)
-		// Echo/ack with server time
-		reply := wsMessage{Type: "ack", Payload: msg, Time: time.Now().Format(time.RFC3339Nano)}
-		if err := writeWSJSON(ctx, c, reply); err != nil {
-			log.Printf("ws write error: %v", err)
-			return
-		}
-		log.Printf("ws sent: %v", reply)
-	}
-}
-
-func writeWSJSON(ctx context.Context, c *websocket.Conn, v any) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	return c.Write(ctx, websocket.MessageText, mustJSON(v))
-}
-
-func readWSJSON(ctx context.Context, c *websocket.Conn, v any) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-	typ, data, err := c.Read(ctx)
-	if err != nil {
-		return err
-	}
-	if typ != websocket.MessageText {
-		return fmt.Errorf("unexpected message type: %v", typ)
-	}
-	return json.Unmarshal(data, v)
-}
-
-func mustJSON(v any) []byte {
-	b, _ := json.Marshal(v)
-	return b
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
-
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -185,35 +62,4 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		dur := time.Since(start)
 		log.Printf("%s %s %d %s", r.Method, r.URL.Path, rw.status, dur)
 	})
-}
-
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (w *responseWriter) WriteHeader(statusCode int) {
-	w.status = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-// Ensure our wrapper preserves optional interfaces that handlers may rely on (e.g., websockets need Hijacker)
-func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	if h, ok := w.ResponseWriter.(http.Hijacker); ok {
-		return h.Hijack()
-	}
-	return nil, nil, fmt.Errorf("http.Hijacker not supported by underlying ResponseWriter")
-}
-
-func (w *responseWriter) Flush() {
-	if f, ok := w.ResponseWriter.(http.Flusher); ok {
-		f.Flush()
-	}
-}
-
-func (w *responseWriter) Push(target string, opts *http.PushOptions) error {
-	if p, ok := w.ResponseWriter.(http.Pusher); ok {
-		return p.Push(target, opts)
-	}
-	return http.ErrNotSupported
 }
