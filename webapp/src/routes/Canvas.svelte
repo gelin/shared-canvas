@@ -1,5 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { type DrawEvent, eventToMessage } from "$lib/ws-canvas";
+    import { wsClient } from "$lib/ws";
+
+    const socket = wsClient;
 
     export let width = 384
     export let height = 384
@@ -33,6 +37,8 @@
         drawContext.strokeStyle = 'black';
         drawContext.lineWidth = lineWidth;
         drawContext.lineCap = 'round';
+
+        socket.connect();
     })
 
     const handleMove = (({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
@@ -51,6 +57,8 @@
                 const drawWidth = Math.abs(x - x1) + lineWidth;
                 const drawHeight = Math.abs(y - y1) + lineWidth;
                 const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
+                const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
+                socket.send(message);
                 onDraw({ x: drawX, y: drawY, data: imageData });
 
                 prev = { x: x1, y: y1 };
@@ -67,14 +75,9 @@
         isDrawing = false;
     }
 
-    type DrawEvent = {
-        x: number,
-        y: number,
-        data: ImageData
-    }
-
     const onDraw = async (e: DrawEvent) => {
         if (!mainContext) return;
+        // need to convert to image for transparency and composition to work
         const image = await createImageBitmap(e.data);
         mainContext.drawImage(image, e.x, e.y);
         // if (!drawContext) return;
