@@ -8,8 +8,8 @@
     export let width = 384
     export let height = 384
 
-    let mainCanvas: HTMLCanvasElement;
-    let mainContext: CanvasRenderingContext2D | null;
+    let viewCanvas: HTMLCanvasElement;
+    let viewContext: CanvasRenderingContext2D | null;
 
     let drawCanvas: HTMLCanvasElement;
     let drawContext: CanvasRenderingContext2D | null;
@@ -19,21 +19,20 @@
     let lineWidth = 3;
 
     onMount(() => {
-        mainContext = mainCanvas.getContext('2d', {
+        viewContext = viewCanvas.getContext('2d', {
             alpha: false,
         });
-        if (!mainContext) return;
-        // mainContext.imageSmoothingEnabled = false;
-        mainContext.fillStyle = 'white';
-        mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+        if (!viewContext) return;
+        // viewContext.imageSmoothingEnabled = false;
+        viewContext.fillStyle = 'white';
+        viewContext.fillRect(0, 0, viewCanvas.width, viewCanvas.height);
 
         drawContext = drawCanvas.getContext('2d', {
             willReadFrequently: true,
         });
         if (!drawContext) return;
-        // mainContext.imageSmoothingEnabled = false;
-        drawContext.fillStyle = 'white';
-        drawContext.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+        // drawContext.imageSmoothingEnabled = false;
+        drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
         drawContext.strokeStyle = 'black';
         drawContext.lineWidth = lineWidth;
         drawContext.lineCap = 'round';
@@ -52,10 +51,10 @@
                 drawContext.closePath();
                 drawContext.stroke();
 
-                const drawX = Math.min(x, x1) - lineWidth / 2;
-                const drawY = Math.min(y, y1) - lineWidth / 2;
-                const drawWidth = Math.abs(x - x1) + lineWidth;
-                const drawHeight = Math.abs(y - y1) + lineWidth;
+                const drawX = Math.floor(Math.min(x, x1) - lineWidth);
+                const drawY = Math.floor(Math.min(y, y1) - lineWidth);
+                const drawWidth = Math.ceil(Math.abs(x - x1) + 2 * lineWidth);
+                const drawHeight = Math.ceil(Math.abs(y - y1) + 2 * lineWidth);
                 const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
                 const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
                 socket.send(message);
@@ -76,12 +75,12 @@
     }
 
     const onDraw = async (e: DrawEvent) => {
-        if (!mainContext) return;
+        if (!viewContext) return;
         // need to convert to image for transparency and composition to work
         const image = await createImageBitmap(e.data);
-        mainContext.drawImage(image, e.x, e.y);
-        // if (!drawContext) return;
-        // drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        viewContext.drawImage(image, e.x, e.y);
+        if (!drawContext) return;
+        // drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
     }
 </script>
 
@@ -94,7 +93,7 @@
 ></canvas>
 <canvas
         id="mainCanvas"
-        bind:this={mainCanvas}
+        bind:this={viewCanvas}
         {width}
         {height}
 ></canvas>
@@ -102,6 +101,7 @@
 <style>
     #drawCanvas {
         border: 1px solid blue;
+        background: white;
         /*position: absolute;*/
     }
 </style>
