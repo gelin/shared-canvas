@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { type DrawEvent, eventToMessage } from "$lib/ws-canvas";
-    import { wsClient } from "$lib/ws";
+    import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
+    import { wsClient, type WSDrawMessage } from "$lib/ws";
 
     const socket = wsClient;
 
@@ -38,6 +38,11 @@
         drawContext.lineCap = 'round';
 
         socket.connect();
+        socket.subscribe((message: WSDrawMessage) => {
+            if (message.method === 'draw') {
+                onDraw(messageToEvent(message));
+            }
+        });
     })
 
     const handleMove = (({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
@@ -58,7 +63,6 @@
                 const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
                 const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
                 socket.send(message);
-                onDraw({ x: drawX, y: drawY, data: imageData });
 
                 prev = { x: x1, y: y1 };
             } else {
@@ -80,7 +84,7 @@
         const image = await createImageBitmap(e.data);
         viewContext.drawImage(image, e.x, e.y);
         if (!drawContext) return;
-        // drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
+        drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
     }
 </script>
 
@@ -100,8 +104,8 @@
 
 <style>
     #drawCanvas {
-        border: 1px solid blue;
-        background: white;
-        /*position: absolute;*/
+        /*border: 1px solid blue;*/
+        /*background: white;*/
+        position: absolute;
     }
 </style>
