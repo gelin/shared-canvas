@@ -30,6 +30,8 @@ func main() {
 	// Static file server from embedded SPA build
 	mux.Handle("/", createEmbedHandler())
 
+	initWsHub()
+
 	srv := &http.Server{Addr: addr, Handler: loggingMiddleware(mux)}
 
 	// Graceful shutdown
