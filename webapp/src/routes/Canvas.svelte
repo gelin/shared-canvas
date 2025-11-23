@@ -43,7 +43,7 @@
                 onDraw(messageToEvent(message));
             }
         });
-    })
+    });
 
     const handleMove = (({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
@@ -53,16 +53,9 @@
                 drawContext.beginPath();
                 drawContext.moveTo(x, y);
                 drawContext.lineTo(x1, y1);
-                drawContext.closePath();
                 drawContext.stroke();
 
-                const drawX = Math.floor(Math.min(x, x1) - lineWidth);
-                const drawY = Math.floor(Math.min(y, y1) - lineWidth);
-                const drawWidth = Math.ceil(Math.abs(x - x1) + 2 * lineWidth);
-                const drawHeight = Math.ceil(Math.abs(y - y1) + 2 * lineWidth);
-                const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
-                const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
-                socket.send(message);
+                sendDraw(x, y, x1, y1);
 
                 prev = { x: x1, y: y1 };
             } else {
@@ -74,9 +67,47 @@
         }
     });
 
+    const handleTouchStart = (e: TouchEvent) => {
+        const coords = toCanvasCoords(e);
+        if (!coords) return;
+        prev = coords;
+        isDrawing = true;
+    };
+
+    const handleTouch = (e: TouchEvent) => {
+        const coords = toCanvasCoords(e);
+        if (!coords) return;
+        if (!drawContext) return null;
+        drawContext.beginPath();
+        drawContext.moveTo(prev.x, prev.y);
+        drawContext.lineTo(coords.x, coords.y);
+        drawContext.stroke();
+
+        sendDraw(prev.x, prev.y, coords.x, coords.y);
+        prev = coords;
+    };
+
+    const toCanvasCoords = ({ touches }: TouchEvent): { x: number; y: number } | null => {
+        if (touches.length === 0) return null;
+        if (!drawCanvas) return null;
+        const rect = drawCanvas.getBoundingClientRect();
+        return { x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top };
+    };
+
     const handleEnd = () => {
         isDrawing = false;
-    }
+    };
+
+    const sendDraw = (x0: number, y0: number, x1: number, y1: number) => {
+        if (!drawContext) return;
+        const drawX = Math.floor(Math.min(x0, x1) - lineWidth);
+        const drawY = Math.floor(Math.min(y0, y1) - lineWidth);
+        const drawWidth = Math.ceil(Math.abs(x0 - x1) + 2 * lineWidth);
+        const drawHeight = Math.ceil(Math.abs(y0 - y1) + 2 * lineWidth);
+        const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
+        const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
+        socket.send(message);
+    };
 
     const onDraw = async (e: DrawEvent) => {
         if (!viewContext) return;
@@ -85,7 +116,7 @@
         viewContext.drawImage(image, e.x, e.y);
         if (!drawContext) return;
         drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
-    }
+    };
 </script>
 
 <canvas id="drawCanvas"
@@ -94,6 +125,9 @@
         {height}
         onmousemove={handleMove}
         onmouseleave={handleEnd}
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouch}
+        ontouchend={handleEnd}
 ></canvas>
 <canvas
         id="mainCanvas"
