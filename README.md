@@ -1,16 +1,45 @@
-# Shared Canvas — Go Web Server with Embedded SvelteKit (Svelte 5) SPA
+# Shared Canvas
 
-This project is a minimal Golang web server that:
-- Serves a SvelteKit (Svelte 5) SPA compiled into the binary using `go:embed` (no runtime Node.js needed to run the binary)
-- Exposes REST API endpoints
-- Allows configuring the listening port via CLI flag
-- Shuts down gracefully on SIGINT/SIGTERM
+This project is a minimal web server that:
+- Provides web UI as SPA, embed into the binary
+- Exposes a WebSocket and REST API
+
+The UI provides a simple drawing canvas that can be shared with other users.
+Every update on the local canvas is broadcast to all connected users, so they all see the same drawing.
+
+## API
+
+* `/` — returns the SPA HTML
+* `/socket` — upgrades to WebSocket
+* `/image` — returns a PNG image of the canvas
+
+### WebSocket messages
+
+#### draw
+
+Sends by SPA to the server and broadcast to all connected clients.
+
+```json
+{
+  "method": "draw",
+  "params": {
+    "x": 10,
+    "y": 20,
+    "w": 3,
+    "h": 3,
+    "p": "___000___"
+  }
+}
+```
+
+`p` is the pixel array encoded: `_` for transparent, `0` for black, `1` for white.
 
 ## Requirements
 - Go 1.21+
-- Node.js 18+ (only required for building the frontend)
+- Node.js 22+
 
-## Build (frontend + backend)
+## Build
+
 Using Makefile (recommended):
 ```bash
 make build
@@ -27,69 +56,31 @@ go build ./cmd/shared-canvas-server
 ```
 
 ## Run
+
 ```bash
 ./shared-canvas-server -port 8080
 ```
+
 Then open your browser at:
 ```
 http://localhost:8080/
 ```
 
-CLI options:
+### CLI options
 - `-port` (int): Port to listen on (default: 8080)
-- `-p` (int): Shorthand for `-port` (default: 8080)
 
-## REST API
-- `GET /api/health` → `{ "status": "ok", "service": "shared-canvas", "time": "RFC3339Nano" }`
-- `GET /api/time` → `{ "now": "RFC3339Nano", "epoch": 173... }`
+## Implementation details
 
-## WebSocket
-- Endpoint: `GET /ws` (upgrades to WebSocket)
-- Protocol: JSON messages `{ type: string, payload?: any, time?: string }`
-- Behavior: server sends an initial `{ type: "welcome", payload: { message: "connected" }, time }` then echoes back any JSON you send wrapped in `{ type: "ack", payload: <your message>, time }`.
+UI has two canvases. One above the other. 
 
-Dev usage:
-- Terminal A: `go run ./cmd/shared-canvas-server -port 8080`
-- Terminal B: `cd webapp && npm run dev`
-- Open http://localhost:5173/ws and click Connect. The dev server proxies `ws://localhost:5173/ws` → `http://localhost:8080/ws`.
+The upper canvas is to draw the lines locally. 
+It's transparent.
+The line is drawn on the mouse move. 
+Then the rectangular area of the line pixels is sent to the server.
+The pixels are encoded, so only black, white and transparent pixels are sent.
+All the grey-scaling appeared to smooth the line is lost.
 
-Production usage:
-- `make build` then run the binary (e.g., `./shared-canvas-server -p 8080`)
-- Open http://localhost:8080/ws and connect.
-
-Notes:
-- Go dependency used: `nhooyr.io/websocket`. If building manually the first time, run `go mod tidy` to fetch it.
-
-## Frontend (Svelte 5 SPA)
-- Source: `webapp/` (Vite + Svelte)
-- Dev server:
-  ```bash
-  # Terminal A: run the Go API
-  go run ./cmd/shared-canvas-server -port 8080
-  # Terminal B: run SvelteKit dev server (with API proxy)
-  cd webapp && npm run dev
-  ```
-  SvelteKit dev server runs on http://localhost:5173 and proxies `/api/*` to http://localhost:8080.
-- Production build artifacts are written to `cmd/shared-canvas-server/web-dist/` and embedded into the Go binary.
-- Unknown non-API routes fall back to `index.html` (SPA routing).
-
-## Project Layout
-```
-cmd/
-  shared-canvas-server/
-    main.go        # server entrypoint, routes, embedding, graceful shutdown
-    web-dist/      # built SPA assets (embedded)
-webapp/            # Svelte 5 app (Vite)
-  src/
-    App.svelte
-    routes/
-      Home.svelte
-      Health.svelte
-      Time.svelte
-  vite.config.ts
-  package.json
-```
-
-## Notes
-- Logging middleware prints method, path, status, and duration for each request.
-- The server attempts graceful shutdown with a 5s timeout upon receiving SIGINT/SIGTERM.
+The lower canvas is to display the shared image.
+The same message with the line pixels is received from the server.
+It's drawn on the lower canvas.
+And the same rectangular area is cleared on the upper canvas to erase the local line.
