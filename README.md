@@ -49,7 +49,7 @@ This builds the Svelte SPA to `cmd/shared-canvas-server/web-dist/` and then comp
 Manual steps:
 ```bash
 # 1) Build the SPA (outputs to cmd/shared-canvas-server/web-dist)
-(cd webapp && npm ci && npm run build)
+cd webapp && npm ci && npm run build
 
 # 2) Build the Go server
 go build ./cmd/shared-canvas-server

@@ -12,7 +12,7 @@ import (
 //go:embed web-dist/*
 var embeddedWeb embed.FS
 
-func createEmbedHandler() http.HandlerFunc {
+func NewEmbedHandler() http.HandlerFunc {
 	fs := http.FS(embeddedWeb)
 	return func(w http.ResponseWriter, r *http.Request) {
 		embedHandler(fs, w, r)

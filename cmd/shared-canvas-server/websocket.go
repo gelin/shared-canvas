@@ -11,12 +11,14 @@ import (
 	"nhooyr.io/websocket"
 )
 
-type wsMessage struct {
+type WebSocketMessage struct {
 	Method string      `json:"method"`
 	Params interface{} `json:"params,omitempty"`
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+var hub = NewWebSocketHub()
+
+func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	// Optional origin check can be added here
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true, // for the demo; consider proper origin checks in production
@@ -26,48 +28,48 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Prepare the client and register to hub
-	client := &wsClient{
-		conn: c,
-		send: make(chan []byte, 256), // per-client buffer; tune as needed
-		id:   r.RemoteAddr,
+	client := &WebSocketClient{
+		Conn: c,
+		Send: make(chan []byte, 256), // per-client buffer; tune as needed
+		Id:   r.RemoteAddr,
 	}
-	hub.register <- client
+	hub.Register <- client
 
 	// Start writer goroutine for this client
 	go writePump(r.Context(), client)
 
 	// Reader loop: read messages and broadcast
 	for {
-		var msg wsMessage
+		var msg WebSocketMessage
 		if err := readWSJSON(r.Context(), c, &msg); err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure || websocket.CloseStatus(err) == websocket.StatusGoingAway {
 				break
 			}
-			log.Printf("ws read error (%s): %v", client.id, err)
+			log.Printf("ws read error (%s): %v", client.Id, err)
 			break
 		}
-		log.Printf("ws received (%s): %v", client.id, msg)
+		log.Printf("ws received (%s): %v", client.Id, msg)
 		broadcastWSJSON(r.Context(), msg)
 	}
 
 	// ensure unregistration
-	hub.unregister <- client
+	hub.Unregister <- client
 }
 
 // writePump consumes the client's send channel and writes frames to the socket.
 // Exits when the channel is closed or a write error occurs.
-func writePump(ctx context.Context, c *wsClient) {
-	for msg := range c.send {
+func writePump(ctx context.Context, c *WebSocketClient) {
+	for msg := range c.Send {
 		wctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		err := c.conn.Write(wctx, websocket.MessageText, msg)
+		err := c.Conn.Write(wctx, websocket.MessageText, msg)
 		cancel()
 		if err != nil {
-			log.Printf("ws write error (%s): %v", c.id, err)
+			log.Printf("ws write error (%s): %v", c.Id, err)
 			break
 		}
 	}
-	// Ensure connection is closed on writer exit; hub.unregister will also try closing, but double-close is fine
-	_ = c.conn.Close(websocket.StatusNormalClosure, "writer exit")
+	// Ensure connection is closed on writer exit; hub.Unregister will also try closing, but double-close is fine
+	_ = c.Conn.Close(websocket.StatusNormalClosure, "writer exit")
 }
 
 func readWSJSON(ctx context.Context, c *websocket.Conn, v any) error {
@@ -87,12 +89,12 @@ func broadcastWSJSON(ctx context.Context, msg any) {
 	// marshal once and fan out
 	data := mustJSON(msg)
 	select {
-	case hub.broadcast <- data:
+	case hub.Broadcast <- data:
 	default:
 		// if a global broadcast is saturated, attempt a bounded wait; otherwise drop
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		select {
-		case hub.broadcast <- data:
+		case hub.Broadcast <- data:
 			cancel()
 		case <-ctx.Done():
 			cancel()
