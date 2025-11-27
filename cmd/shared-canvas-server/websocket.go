@@ -11,11 +11,6 @@ import (
 	"nhooyr.io/websocket"
 )
 
-type WebSocketMessage struct {
-	Method string      `json:"method"`
-	Params interface{} `json:"params,omitempty"`
-}
-
 var hub = NewWebSocketHub()
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +35,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Reader loop: read messages and broadcast
 	for {
-		var msg WebSocketMessage
+		var msg DrawMessage
 		if err := readWSJSON(r.Context(), c, &msg); err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure || websocket.CloseStatus(err) == websocket.StatusGoingAway {
 				break

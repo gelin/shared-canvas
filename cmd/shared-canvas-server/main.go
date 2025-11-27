@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var imgHolder = NewImageHolder()
+
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
@@ -23,6 +25,8 @@ func main() {
 
 	// WebSocket endpoint
 	mux.HandleFunc("/socket", WebSocketHandler)
+
+	mux.HandleFunc("/image", ImageHandler)
 
 	// API routes
 	mux.HandleFunc("/health", HealthHandler)
