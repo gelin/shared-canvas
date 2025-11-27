@@ -35,7 +35,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Reader loop: read messages and broadcast
 	for {
-		var msg DrawMessage
+		var msg *DrawMessage
 		if err := readWSJSON(r.Context(), c, &msg); err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure || websocket.CloseStatus(err) == websocket.StatusGoingAway {
 				break
@@ -82,6 +82,12 @@ func readWSJSON(ctx context.Context, c *websocket.Conn, v any) error {
 
 func broadcastWSJSON(ctx context.Context, msg any) {
 	// marshal once and fan out
+	drawMsg, ok := msg.(*DrawMessage)
+	if ok {
+		imgHolder.Draw <- drawMsg
+	} else {
+		log.Fatalf("unexpected message type: %T\n", msg)
+	}
 	data := mustJSON(msg)
 	select {
 	case hub.Broadcast <- data:

@@ -48,7 +48,6 @@ func (h *WebSocketHub) run() {
 				log.Printf("ws: client unregistered (%s), total=%d", c.Id, len(h.clients))
 			}
 		case msg := <-h.Broadcast:
-			imgHolder.Draw <- msg
 			for c := range h.clients {
 				// Non-blocking send; if buffer is full, drop the client to protect the hub
 				select {

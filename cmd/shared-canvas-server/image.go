@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
@@ -12,7 +11,7 @@ import (
 
 type ImageHolder struct {
 	image *image.Paletted
-	Draw  chan []byte
+	Draw  chan *DrawMessage
 }
 
 type DrawMessage struct {
@@ -42,7 +41,7 @@ func NewImageHolder() *ImageHolder {
 	draw.Draw(img, img.Bounds(), image.NewUniform(White), image.Point{}, draw.Src)
 	holder := &ImageHolder{
 		image: img,
-		Draw:  make(chan []byte),
+		Draw:  make(chan *DrawMessage),
 	}
 	go holder.run()
 	return holder
@@ -55,12 +54,7 @@ func (h *ImageHolder) run() {
 	}
 }
 
-func (h *ImageHolder) draw(binMsg []byte) {
-	msg := &DrawMessage{}
-	err := json.Unmarshal(binMsg, &msg)
-	if err != nil {
-		log.Printf("error decoding message: %v", err)
-	}
+func (h *ImageHolder) draw(msg *DrawMessage) {
 	drawImage := convertMessageToImage(msg)
 	drawRect := image.Rect(msg.Params.X, msg.Params.Y, msg.Params.X+msg.Params.W, msg.Params.Y+msg.Params.H)
 	draw.Draw(h.image, drawRect, drawImage, image.Point{}, draw.Over)
