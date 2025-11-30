@@ -41,6 +41,8 @@
         socket.subscribe((message: WSDrawMessage) => {
             if (message.method === 'draw') {
                 onDraw(messageToEvent(message));
+            } else if (message.method === 'init') {
+                onInit(messageToEvent(message).data);
             }
         });
     });
@@ -116,6 +118,15 @@
         viewContext.drawImage(image, e.x, e.y);
         if (!drawContext) return;
         drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
+    };
+
+    const onInit = (data: ImageData) => {
+        width = data.width;
+        height = data.height;
+        if (!viewContext) return;
+        viewContext.putImageData(data, 0, 0);
+        if (!drawContext) return;
+        drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     };
 </script>
 
