@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Jersey+25&display=swap');
+
 :root {
     color-scheme: light dark;
 }
@@ -12,7 +14,9 @@ html, body, #app {
 }
 
 body {
-    font-family: sans-serif;
+    font-family: "Jersey 25", sans-serif;
+    font-weight: 400;
+    font-style: normal;
 }
 
 main {

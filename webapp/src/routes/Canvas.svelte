@@ -1,13 +1,13 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte';
-    import { slide } from 'svelte/transition';
+    import { fade } from 'svelte/transition';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
     import { wsClient, type WSDrawMessage } from "$lib/ws";
 
     const socket = wsClient;
 
-    let width = 384;
-    let height = 384;
+    let width = 400;
+    let height = 100;
     let ready = false;
 
     let viewCanvas: HTMLCanvasElement;
@@ -138,9 +138,8 @@
 </script>
 
 {#if !ready}
-    <p transition:slide>Loading...</p>
+<p class="loading" transition:fade>Loading...</p>
 {/if}
-<div id="canvasStack" class={ready ? '' : 'hidden'}>
 <canvas id="drawCanvas"
         bind:this={drawCanvas}
         {width}
@@ -159,7 +158,6 @@
         {height}
         style="width: {width}px; height: {height}px;"
 ></canvas>
-</div>
 
 <style>
     #drawCanvas {
@@ -168,15 +166,16 @@
         position: absolute;
     }
 
-    #canvasStack canvas {
-        width: auto;
-        height: auto;
-        transition: width 0.3s ease-in-out, height 0.5s ease-in-out;
+    .loading {
+        position: absolute;
+        width: 400px;
+        color: black;
+        padding: 0 1rem;
+        font-size: 1.8rem;
+        text-align: center;
     }
 
-    #canvasStack.hidden canvas {
-        width: auto;
-        height: 0;
-        max-height: 0;
+    canvas {
+        transition: width 0.3s ease-in-out, height 0.5s ease-in-out;
     }
 </style>
