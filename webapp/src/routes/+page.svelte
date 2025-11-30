@@ -2,6 +2,7 @@
     // Home page - no special script needed
     import Canvas from "./Canvas.svelte";
     import ConnectionIndicator from "./ConnectionIndicator.svelte";
+    import Palette from "./Palette.svelte";
 </script>
 
 <section class="card info">
@@ -13,6 +14,7 @@
 
 <section class="card main">
     <Canvas/>
+    <Palette/>
 </section>
 
 <style>
@@ -28,5 +30,14 @@
 
     .main {
         margin-top: 1rem;
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    @media (max-width: 800px) {
+        .main {
+            flex-direction: column;
+        }
     }
 </style>
