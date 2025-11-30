@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"io"
 	"log"
+	"strings"
 )
 
 type ImageHolder struct {
@@ -55,6 +56,10 @@ func (h *ImageHolder) run() {
 }
 
 func (h *ImageHolder) draw(msg *DrawMessage) {
+	if msg.Method != "draw" {
+		log.Printf("unknown method: %s", msg.Method)
+		return
+	}
 	drawImage := convertMessageToImage(msg)
 	drawRect := image.Rect(msg.Params.X, msg.Params.Y, msg.Params.X+msg.Params.W, msg.Params.Y+msg.Params.H)
 	draw.Draw(h.image, drawRect, drawImage, image.Point{}, draw.Over)
@@ -82,5 +87,34 @@ func (h *ImageHolder) WriteImagePNG(w io.Writer) {
 	err := png.Encode(w, h.image)
 	if err != nil {
 		log.Printf("error encoding image: %v", err)
+	}
+}
+
+func (h *ImageHolder) GetImageAsInitMessage() *DrawMessage {
+	return convertImageToMessage(h.image)
+}
+
+func convertImageToMessage(img *image.Paletted) *DrawMessage {
+	var pixels strings.Builder
+	for _, c := range img.Pix {
+		switch c {
+		case uint8(TransparentIndex):
+			pixels.WriteByte('_')
+			break
+		case uint8(BlackIndex):
+			pixels.WriteByte('0')
+			break
+		case uint8(WhiteIndex):
+			pixels.WriteByte('1')
+			break
+		}
+	}
+	return &DrawMessage{
+		Method: "init",
+		Params: DrawMessageParams{
+			W: img.Bounds().Dx(),
+			H: img.Bounds().Dy(),
+			P: pixels.String(),
+		},
 	}
 }

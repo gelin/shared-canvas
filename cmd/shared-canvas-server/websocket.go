@@ -30,7 +30,13 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	hub.Register <- client
 
-	// Start writer goroutine for this client
+	// Send init message
+	err = writeWSJSON(r.Context(), c, imgHolder.GetImageAsInitMessage())
+	if err != nil {
+		log.Printf("ws init error (%s): %v", client.Id, err)
+	}
+
+	// Start a writer goroutine for this client
 	go writePump(r.Context(), client)
 
 	// Reader loop: read messages and broadcast
@@ -107,4 +113,10 @@ func broadcastWSJSON(ctx context.Context, msg any) {
 func mustJSON(v any) []byte {
 	b, _ := json.Marshal(v)
 	return b
+}
+
+func writeWSJSON(ctx context.Context, c *websocket.Conn, v any) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return c.Write(ctx, websocket.MessageText, mustJSON(v))
 }
