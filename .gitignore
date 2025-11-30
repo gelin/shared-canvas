@@ -1,5 +1,6 @@
 .idea/
 /shared-canvas-server
+/canvas.png
 node_modules/
 webapp/node_modules/
 webapp/.svelte-kit/

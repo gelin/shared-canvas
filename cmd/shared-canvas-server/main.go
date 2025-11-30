@@ -18,13 +18,21 @@ func main() {
 	var port int
 	var width int
 	var height int
+	var imagePath string
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
 	flag.IntVar(&width, "width", 576, "Canvas width in pixels (576 by default)")
 	flag.IntVar(&height, "height", 576, "Canvas height in pixels (576 by default)")
+	flag.StringVar(&imagePath, "image", "canvas.png", "Path to image to load on startup and save on shutdown")
 	flag.Parse()
 
 	imgHolder = NewImageHolder(width, height)
 	log.Printf("Canvas size set to %dx%d pixels\n", width, height)
+
+	log.Printf("Loading canvas image from %s\n", imagePath)
+	err := imgHolder.LoadImageFromPNG(imagePath)
+	if err != nil {
+		log.Printf("Error loading image: %v\n", err)
+	}
 
 	addr := fmt.Sprintf(":%d", port)
 
@@ -56,6 +64,19 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
+
+	log.Printf("Saving canvas image to %s\n", imagePath)
+	imageFile, err := os.Create(imagePath)
+	if err != nil {
+		log.Printf("Error saving image: %v\n", err)
+	}
+	defer func(imageFile *os.File) {
+		err := imageFile.Close()
+		if err != nil {
+			log.Printf("Error closing file: %v\n", err)
+		}
+	}(imageFile)
+	imgHolder.WriteImagePNG(imageFile)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

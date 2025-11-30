@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"io"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -116,4 +117,23 @@ func convertImageToMessage(img *image.Paletted) *DrawMessage {
 			P: pixels.String(),
 		},
 	}
+}
+
+func (h *ImageHolder) LoadImageFromPNG(imagePath string) error {
+	file, err := os.Open(imagePath)
+	if err != nil {
+		return err
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("Error closing file: %v\n", err)
+		}
+	}(file)
+	img, err := png.Decode(file)
+	if err != nil {
+		return err
+	}
+	draw.Draw(h.image, h.image.Bounds(), img, image.Point{}, draw.Src)
+	return nil
 }
