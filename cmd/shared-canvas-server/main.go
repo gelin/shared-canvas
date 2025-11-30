@@ -12,12 +12,19 @@ import (
 	"time"
 )
 
-var imgHolder = NewImageHolder()
+var imgHolder *ImageHolder
 
 func main() {
 	var port int
+	var width int
+	var height int
 	flag.IntVar(&port, "port", 8080, "Port to listen on")
+	flag.IntVar(&width, "width", 576, "Canvas width in pixels (576 by default)")
+	flag.IntVar(&height, "height", 576, "Canvas height in pixels (576 by default)")
 	flag.Parse()
+
+	imgHolder = NewImageHolder(width, height)
+	log.Printf("Canvas size set to %dx%d pixels\n", width, height)
 
 	addr := fmt.Sprintf(":%d", port)
 

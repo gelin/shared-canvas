@@ -36,9 +36,8 @@ var TransparentIndex = Palette.Index(Transparent)
 var BlackIndex = Palette.Index(Black)
 var WhiteIndex = Palette.Index(White)
 
-func NewImageHolder() *ImageHolder {
-	// TODO: make width and height configurable
-	img := image.NewPaletted(image.Rect(0, 0, 384, 384), Palette)
+func NewImageHolder(width, height int) *ImageHolder {
+	img := image.NewPaletted(image.Rect(0, 0, width, height), Palette)
 	draw.Draw(img, img.Bounds(), image.NewUniform(White), image.Point{}, draw.Src)
 	holder := &ImageHolder{
 		image: img,

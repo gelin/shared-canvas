@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
     import { wsClient, type WSDrawMessage } from "$lib/ws";
 
@@ -22,20 +22,10 @@
         viewContext = viewCanvas.getContext('2d', {
             alpha: false,
         });
-        if (!viewContext) return;
-        // viewContext.imageSmoothingEnabled = false;
-        viewContext.fillStyle = 'white';
-        viewContext.fillRect(0, 0, viewCanvas.width, viewCanvas.height);
-
         drawContext = drawCanvas.getContext('2d', {
             willReadFrequently: true,
         });
-        if (!drawContext) return;
-        // drawContext.imageSmoothingEnabled = false;
-        drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-        drawContext.strokeStyle = 'black';
-        drawContext.lineWidth = lineWidth;
-        drawContext.lineCap = 'round';
+        initCanvas();
 
         socket.connect();
         socket.subscribe((message: WSDrawMessage) => {
@@ -46,6 +36,20 @@
             }
         });
     });
+
+    const initCanvas = () => {
+        if (!viewContext) return;
+        // viewContext.imageSmoothingEnabled = false;
+        viewContext.fillStyle = 'white';
+        viewContext.fillRect(0, 0, viewCanvas.width, viewCanvas.height);
+
+        if (!drawContext) return;
+        // drawContext.imageSmoothingEnabled = false;
+        drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        drawContext.strokeStyle = 'black';
+        drawContext.lineWidth = lineWidth;
+        drawContext.lineCap = 'round';
+    };
 
     const handleMove = (({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
@@ -120,13 +124,13 @@
         drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
     };
 
-    const onInit = (data: ImageData) => {
+    const onInit = async (data: ImageData) => {
         width = data.width;
         height = data.height;
+        await tick();   // wait for DOM changes to be applied
+        initCanvas();
         if (!viewContext) return;
         viewContext.putImageData(data, 0, 0);
-        if (!drawContext) return;
-        drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     };
 </script>
 

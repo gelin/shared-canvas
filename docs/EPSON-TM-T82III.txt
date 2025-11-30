@@ -1,0 +1,10 @@
+Dot density 203 dpi x 203 dpi
+Print width (80 mm paper width) 72±0.5 mm
+Print width (58 mm paper width) 52.5±0.5 mm
+
+Fonts 12x24 (Font A), 9x17 (Font B)
+Column capacity (80 mm paper width) 48 (Font A), 64 (Font B)
+Column capacity (58 mm paper width) 35 (Font A), 46 (Font B)
+
+Width pixes, 80 mm paper, by fonts: 12px * 48 = 576px, 9px * 64 = 576px
+Width pixes, 80 mm paper, by resolution: 72mm = 2.83465in, 2.83465in * 203dpi = 576px
