@@ -15,6 +15,25 @@ Every update on the local canvas is broadcast to all connected users, so they al
 
 ### WebSocket messages
 
+#### init
+
+Sends by the server to the SPA on WebSocket connected to initialise the canvas.
+
+```json
+{
+  "method": "init",
+  "params": {
+    "w": 100,
+    "h": 100,
+    "p": "000111..."
+  }
+}
+```
+
+`w` and `h` are the canvas dimensions.
+
+`p` is the pixel array encoded: `_` for transparent, `0` for black, `1` for white.
+
 #### draw
 
 Sends by SPA to the server and broadcast to all connected clients.
@@ -31,6 +50,10 @@ Sends by SPA to the server and broadcast to all connected clients.
   }
 }
 ```
+
+`x`, `y` are the top-left corner of the rectangular area to draw.
+
+`w` and `h` are the rectangular area dimensions.
 
 `p` is the pixel array encoded: `_` for transparent, `0` for black, `1` for white.
 
@@ -58,7 +81,7 @@ go build ./cmd/shared-canvas-server
 ## Run
 
 ```bash
-./shared-canvas-server -port 8080
+./shared-canvas-server -port 8080 -width 576 -height 576 -image canvas.png
 ```
 
 Then open your browser at:
@@ -67,7 +90,11 @@ http://localhost:8080/
 ```
 
 ### CLI options
+
 - `-port` (int): Port to listen on (default: 8080)
+- `-width` (int): Canvas width (default: 576)
+- `-height` (int): Canvas height (default: 576)
+- `-image` (string): Path to the image to load on startup and save to on shutdown (default: canvas.png)
 
 ## Implementation details
 
