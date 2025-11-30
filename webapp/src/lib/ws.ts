@@ -51,6 +51,7 @@ class WSClient {
 
         ws.onclose = () => {
             this.statusStore.set('disconnected');
+            setTimeout(() => this.connect(), 1e3);
         };
     }
 
