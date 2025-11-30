@@ -1,12 +1,14 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte';
+    import { slide } from 'svelte/transition';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
     import { wsClient, type WSDrawMessage } from "$lib/ws";
 
     const socket = wsClient;
 
-    export let width = 384
-    export let height = 384
+    let width = 384;
+    let height = 384;
+    let ready = false;
 
     let viewCanvas: HTMLCanvasElement;
     let viewContext: CanvasRenderingContext2D | null;
@@ -131,13 +133,19 @@
         initCanvas();
         if (!viewContext) return;
         viewContext.putImageData(data, 0, 0);
+        ready = true;
     };
 </script>
 
+{#if !ready}
+    <p transition:slide>Loading...</p>
+{/if}
+<div id="canvasStack" class={ready ? '' : 'hidden'}>
 <canvas id="drawCanvas"
         bind:this={drawCanvas}
         {width}
         {height}
+        style="width: {width}px; height: {height}px;"
         onmousemove={handleMove}
         onmouseleave={handleEnd}
         ontouchstart={handleTouchStart}
@@ -149,12 +157,26 @@
         bind:this={viewCanvas}
         {width}
         {height}
+        style="width: {width}px; height: {height}px;"
 ></canvas>
+</div>
 
 <style>
     #drawCanvas {
         /*border: 1px solid blue;*/
         /*background: white;*/
         position: absolute;
+    }
+
+    #canvasStack canvas {
+        width: auto;
+        height: auto;
+        transition: width 0.3s ease-in-out, height 0.5s ease-in-out;
+    }
+
+    #canvasStack.hidden canvas {
+        width: auto;
+        height: 0;
+        max-height: 0;
     }
 </style>
