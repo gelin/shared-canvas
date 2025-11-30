@@ -53,7 +53,18 @@
         drawContext.lineCap = 'round';
     };
 
-    const handleMove = (({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
+    const handleClick = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
+        if (!drawContext) return;
+        drawContext.beginPath();
+        drawContext.moveTo(x1, y1);
+        drawContext.lineTo(x1, y1);
+        drawContext.stroke();
+
+        sendDraw(x1, y1, x1, y1);
+        prev = { x: x1, y: y1 };
+    };
+
+    const handleMove = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
         if (buttons == 1) {
             if (isDrawing) {
@@ -73,7 +84,7 @@
         } else {
             isDrawing = false;
         }
-    });
+    };
 
     const handleTouchStart = (e: TouchEvent) => {
         const coords = toCanvasCoords(e);
@@ -145,6 +156,7 @@
         {width}
         {height}
         style="width: {width}px; height: {height}px;"
+        onclick={handleClick}
         onmousemove={handleMove}
         onmouseleave={handleEnd}
         ontouchstart={handleTouchStart}
