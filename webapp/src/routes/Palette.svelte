@@ -1,16 +1,34 @@
 <script lang="ts">
     const sizes = [ 1, 3, 5, 7, 10 ]
+
+    let { color = 'black', size = 3 } = $props();
+
+    const selectTool = (e: MouseEvent) => {
+        const target = e.currentTarget as HTMLElement;
+        color = target.dataset.color as string;
+        size = parseInt(target.dataset.size as string);
+    }
 </script>
 
 <div class="palette">
-    <div class="blacks">
-        {#each sizes as size}
-            <button title="Black brush of {size} pixels"><span class="size{size}"></span></button>
+    <div class="blacks {color === 'black' ? 'active' : ''}">
+        {#each sizes as s}
+            <button title="Black brush of {s} pixels"
+                    class="{s === size ? 'active' : ''}"
+                    data-color="black"
+                    data-size="{s}"
+                    onclick={selectTool}
+            ><span></span></button>
         {/each}
     </div>
-    <div class="whites">
-        {#each sizes as size}
-            <button title="White brush of {size} pixels"><span class="size{size}"></span></button>
+    <div class="whites {color === 'white' ? 'active' : ''}">
+        {#each sizes as s}
+            <button title="White brush of {s} pixels"
+                    class="{s === size ? 'active' : ''}"
+                    data-color="white"
+                    data-size="{s}"
+                    onclick={selectTool}
+            ><span></span></button>
         {/each}
     </div>
 </div>
@@ -39,39 +57,49 @@
         display: block;
         border-radius: 50%;
     }
-    .palette button span.size1 {
+    .palette button[data-size="1"] span {
         width: 1px;
         height: 1px;
     }
-    .palette button span.size3 {
+    .palette button[data-size="3"] span {
         width: 3px;
         height: 3px;
     }
-    .palette button span.size5 {
+    .palette button[data-size="5"] span {
         width: 5px;
         height: 5px;
     }
-    .palette button span.size7 {
+    .palette button[data-size="7"] span {
         width: 7px;
         height: 7px;
     }
-    .palette button span.size10 {
+    .palette button[data-size="10"] span {
         width: 10px;
         height: 10px;
     }
     .palette .blacks button {
-        color: black;
-        background: white;
-    }
-    .palette .whites button {
-        color: white;
-        background: black;
+        background: color-mix(in oklab, canvas, canvasText 20%);
     }
     .palette .blacks button span {
         background: black;
     }
+    .palette .blacks button:hover {
+        background: color-mix(in oklab, canvas, canvasText 40%);
+    }
+    .palette .blacks.active button.active {
+        border: 1px solid canvasText;
+    }
+    .palette .whites button {
+        background: color-mix(in oklab, canvas, canvasText 20%);
+    }
     .palette .whites button span {
         background: white;
+    }
+    .palette .whites button:hover {
+        background: color-mix(in oklab, canvas, canvasText 40%);
+    }
+    .palette .whites.active button.active {
+        border: 1px solid canvasText;
     }
 
     @media (max-width: 800px) {
