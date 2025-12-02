@@ -54,7 +54,7 @@
         drawContext.lineCap = 'round';
     };
 
-    const handleClick = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
+    const handleClick = ({ offsetX: x1, offsetY: y1 }: MouseEvent) => {
         if (!drawContext) return;
         drawContext.strokeStyle = color;
         drawContext.lineWidth = lineWidth;

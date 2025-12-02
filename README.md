@@ -17,7 +17,7 @@ Every update on the local canvas is broadcast to all connected users, so they al
 
 #### init
 
-Sends by the server to the SPA on WebSocket connected to initialise the canvas.
+Sent by the server to the SPA on WebSocket connected to initialise the canvas.
 
 ```json
 {
@@ -36,7 +36,7 @@ Sends by the server to the SPA on WebSocket connected to initialise the canvas.
 
 #### draw
 
-Sends by SPA to the server and broadcast to all connected clients.
+Sent by SPA to the server and broadcast to all connected clients.
 
 ```json
 {
@@ -58,18 +58,22 @@ Sends by SPA to the server and broadcast to all connected clients.
 `p` is the pixel array encoded: `_` for transparent, `0` for black, `1` for white.
 
 ## Requirements
+
 - Go 1.21+
 - Node.js 22+
 
 ## Build
 
 Using Makefile (recommended):
+
 ```bash
 make build
 ```
+
 This builds the Svelte SPA to `cmd/shared-canvas-server/web-dist/` and then compiles the Go server. The resulting binary is embedded with the SPA assets.
 
 Manual steps:
+
 ```bash
 # 1) Build the SPA (outputs to cmd/shared-canvas-server/web-dist)
 cd webapp && npm ci && npm run build
