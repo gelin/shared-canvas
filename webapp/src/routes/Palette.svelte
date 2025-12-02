@@ -1,12 +1,15 @@
 <script lang="ts">
-    const sizes = [ 1, 3, 5, 7, 10 ]
+    import { PaletteChangeEvent } from "./Palette";
 
-    let { color = 'black', size = 3 } = $props();
+    const sizes = [ 1, 3, 5, 7, 10, 15 ]
+
+    let { color = 'black', size = 3, onPaletteChange } = $props();
 
     const selectTool = (e: MouseEvent) => {
         const target = e.currentTarget as HTMLElement;
         color = target.dataset.color as string;
         size = parseInt(target.dataset.size as string);
+        onPaletteChange?.(new PaletteChangeEvent(color, size));
     }
 </script>
 
@@ -76,6 +79,10 @@
     .palette button[data-size="10"] span {
         width: 10px;
         height: 10px;
+    }
+    .palette button[data-size="15"] span {
+        width: 15px;
+        height: 15px;
     }
     .palette .blacks button {
         background: color-mix(in oklab, canvas, canvasText 20%);

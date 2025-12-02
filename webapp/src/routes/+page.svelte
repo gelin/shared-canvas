@@ -1,8 +1,11 @@
 <script lang="ts">
-    // Home page - no special script needed
     import Canvas from "./Canvas.svelte";
     import ConnectionIndicator from "./ConnectionIndicator.svelte";
     import Palette from "./Palette.svelte";
+    import type { PaletteChangeEvent } from "./Palette";
+
+    let lineWidth = $state(3);
+    let color = $state('black');
 </script>
 
 <section class="card info">
@@ -13,8 +16,11 @@
 </section>
 
 <section class="card main">
-    <Canvas/>
-    <Palette/>
+    <Canvas {lineWidth} {color}/>
+    <Palette onPaletteChange={(e: PaletteChangeEvent) => {
+        color = e.color;
+        lineWidth = e.size;
+    }}/>
 </section>
 
 <style>

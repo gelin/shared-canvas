@@ -6,9 +6,9 @@
 
     const socket = wsClient;
 
-    let width = 400;
-    let height = 100;
-    let ready = false;
+    let width = $state(400);
+    let height = $state(100);
+    let ready = $state(false);
 
     let viewCanvas: HTMLCanvasElement;
     let viewContext: CanvasRenderingContext2D | null;
@@ -18,7 +18,8 @@
 
     let isDrawing = false;
     let prev = { x: 0, y: 0 };
-    let lineWidth = 3;
+
+    let { lineWidth = 3, color = 'black' } = $props();
 
     onMount(() => {
         viewContext = viewCanvas.getContext('2d', {
@@ -48,13 +49,15 @@
         if (!drawContext) return;
         // drawContext.imageSmoothingEnabled = false;
         drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-        drawContext.strokeStyle = 'black';
+        drawContext.strokeStyle = color;
         drawContext.lineWidth = lineWidth;
         drawContext.lineCap = 'round';
     };
 
     const handleClick = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
+        drawContext.strokeStyle = color;
+        drawContext.lineWidth = lineWidth;
         drawContext.beginPath();
         drawContext.moveTo(x1, y1);
         drawContext.lineTo(x1, y1);
@@ -69,6 +72,8 @@
         if (buttons == 1) {
             if (isDrawing) {
                 const { x, y } = prev;
+                drawContext.strokeStyle = color;
+                drawContext.lineWidth = lineWidth;
                 drawContext.beginPath();
                 drawContext.moveTo(x, y);
                 drawContext.lineTo(x1, y1);
@@ -97,6 +102,8 @@
         const coords = toCanvasCoords(e);
         if (!coords) return;
         if (!drawContext) return null;
+        drawContext.strokeStyle = color;
+        drawContext.lineWidth = lineWidth;
         drawContext.beginPath();
         drawContext.moveTo(prev.x, prev.y);
         drawContext.lineTo(coords.x, coords.y);
@@ -176,6 +183,7 @@
         /*border: 1px solid blue;*/
         /*background: white;*/
         position: absolute;
+        cursor: crosshair;
     }
 
     .loading {
