@@ -1,14 +1,47 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { PaletteChangeEvent } from "./Palette";
 
     const sizes = [ 1, 3, 5, 7, 10, 15 ]
 
     let { color = 'black', size = 3, onPaletteChange } = $props();
 
+    const LS_COLOR_KEY = 'palette.color';
+    const LS_SIZE_KEY = 'palette.size';
+
+    const persist = () => {
+        try {
+            localStorage.setItem(LS_COLOR_KEY, color);
+            localStorage.setItem(LS_SIZE_KEY, String(size));
+        } catch (_) {
+            // ignore storage errors (e.g., privacy mode)
+        }
+    }
+
+    onMount(() => {
+        try {
+            const savedColor = localStorage.getItem(LS_COLOR_KEY);
+            const savedSize = localStorage.getItem(LS_SIZE_KEY);
+            const validColor = savedColor === 'black' || savedColor === 'white' ? savedColor : null;
+            const parsedSize = savedSize ? parseInt(savedSize, 10) : NaN;
+            const validSize = sizes.includes(parsedSize) ? parsedSize : null;
+
+            if (validColor) color = validColor;
+            if (validSize !== null) size = validSize as number;
+
+            // Notify parent about the (possibly restored) selection
+            onPaletteChange?.(new PaletteChangeEvent(color, size));
+        } catch (_) {
+            // If localStorage is unavailable, just emit current defaults
+            onPaletteChange?.(new PaletteChangeEvent(color, size));
+        }
+    });
+
     const selectTool = (e: MouseEvent) => {
         const target = e.currentTarget as HTMLElement;
         color = target.dataset.color as string;
         size = parseInt(target.dataset.size as string);
+        persist();
         onPaletteChange?.(new PaletteChangeEvent(color, size));
     }
 </script>
