@@ -2,10 +2,9 @@
     import Canvas from "./Canvas.svelte";
     import ConnectionIndicator from "./ConnectionIndicator.svelte";
     import Palette from "./Palette.svelte";
-    import type { PaletteChangeEvent } from "./Palette";
+    import { DEFAULT_TOOL, type PaletteChangeEvent } from "./Palette";
 
-    let lineWidth = $state(3);
-    let color = $state('black');
+    let tool = $state(DEFAULT_TOOL);
 </script>
 
 <section class="card info">
@@ -16,10 +15,9 @@
 </section>
 
 <section class="card main">
-    <Canvas {lineWidth} {color}/>
+    <Canvas {tool}/>
     <Palette onPaletteChange={(e: PaletteChangeEvent) => {
-        color = e.color;
-        lineWidth = e.size;
+        tool = e.tool;
     }}/>
 </section>
 

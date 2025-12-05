@@ -1,18 +1,16 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { PaletteChangeEvent } from "./Palette";
+    import { type PaletteTool, PaletteChangeEvent, DEFAULT_TOOL } from "./Palette";
 
     const sizes = [ 1, 3, 5, 7, 10, 15 ]
 
-    let { color = 'black', size = 3, onPaletteChange } = $props();
+    let { tool = DEFAULT_TOOL, onPaletteChange } = $props();
 
-    const LS_COLOR_KEY = 'palette.color';
-    const LS_SIZE_KEY = 'palette.size';
+    const LS_TOOL_KEY = 'palette.tool';
 
     const persist = () => {
         try {
-            localStorage.setItem(LS_COLOR_KEY, color);
-            localStorage.setItem(LS_SIZE_KEY, String(size));
+            localStorage.setItem(LS_TOOL_KEY, JSON.stringify(tool));
         } catch (_) {
             // ignore storage errors (e.g., privacy mode)
         }
@@ -20,47 +18,64 @@
 
     onMount(() => {
         try {
-            const savedColor = localStorage.getItem(LS_COLOR_KEY);
-            const savedSize = localStorage.getItem(LS_SIZE_KEY);
-            const validColor = savedColor === 'black' || savedColor === 'white' ? savedColor : null;
-            const parsedSize = savedSize ? parseInt(savedSize, 10) : NaN;
+            const savedTool = JSON.parse(localStorage.getItem(LS_TOOL_KEY) || '{}');
+            console.log('Restored tool:', savedTool);
+            const validColor = savedTool?.color === 'black' || savedTool?.color === 'white' ? savedTool?.color : null;
+            const parsedSize = savedTool?.size ? parseInt(savedTool?.size, 10) : NaN;
             const validSize = sizes.includes(parsedSize) ? parsedSize : null;
 
-            if (validColor) color = validColor;
-            if (validSize !== null) size = validSize as number;
+            if (validColor && validSize !== null) {
+                tool = {
+                    type: 'line',
+                    color: validColor,
+                    size: validSize,
+                    stamp: null
+                }
+            }
 
             // Notify parent about the (possibly restored) selection
-            onPaletteChange?.(new PaletteChangeEvent(color, size));
+            onPaletteChange?.(new PaletteChangeEvent(tool));
         } catch (_) {
             // If localStorage is unavailable, just emit current defaults
-            onPaletteChange?.(new PaletteChangeEvent(color, size));
+            onPaletteChange?.(new PaletteChangeEvent(tool));
         }
     });
 
     const selectTool = (e: MouseEvent) => {
         const target = e.currentTarget as HTMLElement;
-        color = target.dataset.color as string;
-        size = parseInt(target.dataset.size as string);
+        const type = target.dataset.type as PaletteTool['type'];
+        const color = target.dataset.color as PaletteTool['color'];
+        const size = parseInt(target.dataset.size as string);
+        if (type === 'line') {
+            tool = {
+                type: 'line',
+                color: color,
+                size: size,
+                stamp: null
+            }
+        }
         persist();
-        onPaletteChange?.(new PaletteChangeEvent(color, size));
+        onPaletteChange?.(new PaletteChangeEvent(tool));
     }
 </script>
 
 <div class="palette">
-    <div class="blacks {color === 'black' ? 'active' : ''}">
+    <div class="blacks {tool?.color === 'black' ? 'active' : ''}">
         {#each sizes as s}
-            <button title="Black brush of {s} pixels"
-                    class="{s === size ? 'active' : ''}"
+            <button title="Line of {s} pixels"
+                    class="{tool?.type === 'line' && s === tool?.size ? 'active' : ''}"
+                    data-type="line"
                     data-color="black"
                     data-size="{s}"
                     onclick={selectTool}
             ><span></span></button>
         {/each}
     </div>
-    <div class="whites {color === 'white' ? 'active' : ''}">
+    <div class="whites {tool?.color === 'white' ? 'active' : ''}">
         {#each sizes as s}
-            <button title="White brush of {s} pixels"
-                    class="{s === size ? 'active' : ''}"
+            <button title="Line of {s} pixels"
+                    class="{tool?.type === 'line' && s === tool?.size ? 'active' : ''}"
+                    data-type="line"
                     data-color="white"
                     data-size="{s}"
                     onclick={selectTool}

@@ -19,7 +19,7 @@
     let isDrawing = false;
     let prev = { x: 0, y: 0 };
 
-    let { lineWidth = 3, color = 'black' } = $props();
+    let { tool } = $props();
 
     onMount(() => {
         viewContext = viewCanvas.getContext('2d', {
@@ -49,15 +49,19 @@
         if (!drawContext) return;
         // drawContext.imageSmoothingEnabled = false;
         drawContext.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-        drawContext.strokeStyle = color;
-        drawContext.lineWidth = lineWidth;
+        initContext();
+    };
+
+    const initContext = () => {
+        if (!drawContext) return;
+        drawContext.strokeStyle = tool?.color ?? 'black';
+        drawContext.lineWidth = tool?.size ?? 3;
         drawContext.lineCap = 'round';
     };
 
     const handleClick = ({ offsetX: x1, offsetY: y1 }: MouseEvent) => {
         if (!drawContext) return;
-        drawContext.strokeStyle = color;
-        drawContext.lineWidth = lineWidth;
+        initContext();
         drawContext.beginPath();
         drawContext.moveTo(x1, y1);
         drawContext.lineTo(x1, y1);
@@ -72,8 +76,7 @@
         if (buttons == 1) {
             if (isDrawing) {
                 const { x, y } = prev;
-                drawContext.strokeStyle = color;
-                drawContext.lineWidth = lineWidth;
+                initContext();
                 drawContext.beginPath();
                 drawContext.moveTo(x, y);
                 drawContext.lineTo(x1, y1);
@@ -102,8 +105,7 @@
         const coords = toCanvasCoords(e);
         if (!coords) return;
         if (!drawContext) return null;
-        drawContext.strokeStyle = color;
-        drawContext.lineWidth = lineWidth;
+        initContext();
         drawContext.beginPath();
         drawContext.moveTo(prev.x, prev.y);
         drawContext.lineTo(coords.x, coords.y);
@@ -126,6 +128,7 @@
 
     const sendDraw = (x0: number, y0: number, x1: number, y1: number) => {
         if (!drawContext) return;
+        const lineWidth = drawContext.lineWidth;
         const drawX = Math.floor(Math.min(x0, x1) - lineWidth);
         const drawY = Math.floor(Math.min(y0, y1) - lineWidth);
         const drawWidth = Math.ceil(Math.abs(x0 - x1) + 2 * lineWidth);
