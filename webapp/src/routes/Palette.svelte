@@ -1,9 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { type PaletteTool, PaletteChangeEvent, DEFAULT_TOOL, stampUrl, STAMP_SIZE } from "./Palette";
+    import { type PaletteTool, PaletteChangeEvent, DEFAULT_TOOL, stampUrl, STAMP_SIZE, STAMPS } from "./Palette";
 
     const sizes = [ 1, 3, 5, 7, 10, 15 ];
-    const stamps = [ 'star' ];
+    const stamps = STAMPS;
 
     let { tool = DEFAULT_TOOL, onPaletteChange } = $props();
 

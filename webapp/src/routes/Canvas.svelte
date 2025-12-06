@@ -3,6 +3,7 @@
     import { fade } from 'svelte/transition';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
     import { wsClient, type WSDrawMessage } from "$lib/ws";
+    import { STAMP_HALF_SIZE, STAMP_SIZE, stampUrl } from "./Palette";
 
     const socket = wsClient;
 
@@ -20,6 +21,8 @@
     let prev = { x: 0, y: 0 };
 
     let { tool } = $props();
+
+    let stampImage: Image | null;
 
     onMount(() => {
         viewContext = viewCanvas.getContext('2d', {
@@ -57,22 +60,43 @@
         drawContext.strokeStyle = tool?.color ?? 'black';
         drawContext.lineWidth = tool?.size ?? 3;
         drawContext.lineCap = 'round';
+        loadStampImage();
+    };
+
+    const loadStampImage = () => {
+        if (tool.type === 'stamp') {
+            const img = new Image();
+            img.src = stampUrl(tool.color, tool.stamp);
+            stampImage = img;
+        } else {
+            stampImage = null;
+        }
     };
 
     const handleClick = ({ offsetX: x1, offsetY: y1 }: MouseEvent) => {
         if (!drawContext) return;
         initContext();
-        drawContext.beginPath();
-        drawContext.moveTo(x1, y1);
-        drawContext.lineTo(x1, y1);
-        drawContext.stroke();
 
-        sendDraw(x1, y1, x1, y1);
+        switch (tool?.type) {
+            case 'line':
+                drawContext.beginPath();
+                drawContext.moveTo(x1, y1);
+                drawContext.lineTo(x1, y1);
+                drawContext.stroke();
+                sendDrawLine(x1, y1, x1, y1);
+            break;
+            case 'stamp':
+                drawContext.drawImage(stampImage, x1 - STAMP_HALF_SIZE, y1 - STAMP_HALF_SIZE);
+                sendDrawStamp(x1, y1);
+                break;
+        }
+
         prev = { x: x1, y: y1 };
     };
 
     const handleMove = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
+        if (tool?.type !== 'line') return;
         if (buttons == 1) {
             if (isDrawing) {
                 const { x, y } = prev;
@@ -82,7 +106,7 @@
                 drawContext.lineTo(x1, y1);
                 drawContext.stroke();
 
-                sendDraw(x, y, x1, y1);
+                sendDrawLine(x, y, x1, y1);
 
                 prev = { x: x1, y: y1 };
             } else {
@@ -99,19 +123,28 @@
         if (!coords) return;
         prev = coords;
         isDrawing = true;
+        if (tool?.type === 'stamp') {
+            if (!drawContext) return;
+            initContext();
+            drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
+            sendDrawStamp(coords.x, coords.y);
+        }
     };
 
     const handleTouch = (e: TouchEvent) => {
         const coords = toCanvasCoords(e);
         if (!coords) return;
-        if (!drawContext) return null;
-        initContext();
-        drawContext.beginPath();
-        drawContext.moveTo(prev.x, prev.y);
-        drawContext.lineTo(coords.x, coords.y);
-        drawContext.stroke();
 
-        sendDraw(prev.x, prev.y, coords.x, coords.y);
+        if (tool?.type === 'line') {
+            if (!drawContext) return null;
+            initContext();
+            drawContext.beginPath();
+            drawContext.moveTo(prev.x, prev.y);
+            drawContext.lineTo(coords.x, coords.y);
+            drawContext.stroke();
+            sendDrawLine(prev.x, prev.y, coords.x, coords.y);
+        }
+
         prev = coords;
     };
 
@@ -126,13 +159,24 @@
         isDrawing = false;
     };
 
-    const sendDraw = (x0: number, y0: number, x1: number, y1: number) => {
+    const sendDrawLine = (x0: number, y0: number, x1: number, y1: number) => {
         if (!drawContext) return;
         const lineWidth = drawContext.lineWidth;
         const drawX = Math.floor(Math.min(x0, x1) - lineWidth);
         const drawY = Math.floor(Math.min(y0, y1) - lineWidth);
         const drawWidth = Math.ceil(Math.abs(x0 - x1) + 2 * lineWidth);
         const drawHeight = Math.ceil(Math.abs(y0 - y1) + 2 * lineWidth);
+        const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
+        const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
+        socket.send(message);
+    };
+
+    const sendDrawStamp = (x: number, y: number) => {
+        if (!drawContext) return;
+        const drawX = Math.floor(x - STAMP_HALF_SIZE);
+        const drawY = Math.floor(y - STAMP_HALF_SIZE);
+        const drawWidth = STAMP_SIZE;
+        const drawHeight = STAMP_SIZE;
         const imageData = drawContext.getImageData(drawX, drawY, drawWidth, drawHeight);
         const message = eventToMessage({ x: drawX, y: drawY, data: imageData });
         socket.send(message);
@@ -165,7 +209,7 @@
         bind:this={drawCanvas}
         {width}
         {height}
-        style="width: {width}px; height: {height}px;"
+        style="width: {width}px; height: {height}px; cursor: {tool?.type === 'stamp' ? `url(${stampUrl(tool?.color, tool?.stamp)}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
         onclick={handleClick}
         onmousemove={handleMove}
         onmouseleave={handleEnd}
