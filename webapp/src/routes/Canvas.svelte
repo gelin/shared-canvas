@@ -3,7 +3,7 @@
     import { fade } from 'svelte/transition';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
     import { wsClient, type WSDrawMessage } from "$lib/ws";
-    import { STAMP_HALF_SIZE, STAMP_SIZE, stampUrl } from "./Palette";
+    import { tool, STAMP_HALF_SIZE, STAMP_SIZE } from "./Palette";
 
     const socket = wsClient;
 
@@ -20,8 +20,6 @@
     let isDrawing = false;
     let prev = { x: 0, y: 0 };
 
-    let { tool } = $props();
-
     let stampImage: Image | null;
 
     onMount(() => {
@@ -36,9 +34,9 @@
         socket.connect();
         socket.subscribe((message: WSDrawMessage) => {
             if (message.method === 'draw') {
-                onDraw(messageToEvent(message));
+                onDrawMessage(messageToEvent(message));
             } else if (message.method === 'init') {
-                onInit(messageToEvent(message).data);
+                onInitMessage(messageToEvent(message));
             }
         });
     });
@@ -57,27 +55,26 @@
 
     const initContext = () => {
         if (!drawContext) return;
-        drawContext.strokeStyle = tool?.color ?? 'black';
-        drawContext.lineWidth = tool?.size ?? 3;
+        drawContext.strokeStyle = $tool.color;
+        drawContext.lineWidth = $tool.size;
         drawContext.lineCap = 'round';
-        loadStampImage();
     };
 
-    const loadStampImage = () => {
-        if (tool.type === 'stamp') {
+    tool.subscribe((t) => {
+        if (t.type === 'stamp') {
             const img = new Image();
-            img.src = stampUrl(tool.color, tool.stamp);
+            img.src = t.stampUrl;
             stampImage = img;
         } else {
             stampImage = null;
         }
-    };
+    });
 
     const handleClick = ({ offsetX: x1, offsetY: y1 }: MouseEvent) => {
         if (!drawContext) return;
         initContext();
 
-        switch (tool?.type) {
+        switch ($tool.type) {
             case 'line':
                 drawContext.beginPath();
                 drawContext.moveTo(x1, y1);
@@ -96,7 +93,7 @@
 
     const handleMove = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
         if (!drawContext) return;
-        if (tool?.type !== 'line') return;
+        if ($tool.type !== 'line') return;
         if (buttons == 1) {
             if (isDrawing) {
                 const { x, y } = prev;
@@ -123,7 +120,7 @@
         if (!coords) return;
         prev = coords;
         isDrawing = true;
-        if (tool?.type === 'stamp') {
+        if ($tool.type === 'stamp') {
             if (!drawContext) return;
             initContext();
             drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
@@ -135,7 +132,7 @@
         const coords = toCanvasCoords(e);
         if (!coords) return;
 
-        if (tool?.type === 'line') {
+        if ($tool.type === 'line') {
             if (!drawContext) return null;
             initContext();
             drawContext.beginPath();
@@ -182,7 +179,7 @@
         socket.send(message);
     };
 
-    const onDraw = async (e: DrawEvent) => {
+    const onDrawMessage = async (e: DrawEvent) => {
         if (!viewContext) return;
         // need to convert to image for transparency and composition to work
         const image = await createImageBitmap(e.data);
@@ -191,13 +188,13 @@
         drawContext.clearRect(e.x, e.y, e.data.width, e.data.height);
     };
 
-    const onInit = async (data: ImageData) => {
-        width = data.width;
-        height = data.height;
+    const onInitMessage = async (e: DrawEvent) => {
+        width = e.data.width;
+        height = e.data.height;
         await tick();   // wait for DOM changes to be applied
         initCanvas();
         if (!viewContext) return;
-        viewContext.putImageData(data, 0, 0);
+        viewContext.putImageData(e.data, 0, 0);
         ready = true;
     };
 </script>
@@ -209,7 +206,7 @@
         bind:this={drawCanvas}
         {width}
         {height}
-        style="width: {width}px; height: {height}px; cursor: {tool?.type === 'stamp' ? `url(${stampUrl(tool?.color, tool?.stamp)}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
+        style="width: {width}px; height: {height}px; cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
         onclick={handleClick}
         onmousemove={handleMove}
         onmouseleave={handleEnd}

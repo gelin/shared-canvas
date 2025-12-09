@@ -1,94 +1,38 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { type PaletteTool, PaletteChangeEvent, DEFAULT_TOOL, stampUrl, STAMP_SIZE, STAMPS } from "./Palette";
-
-    const sizes = [ 1, 3, 5, 7, 10, 15 ];
-    const stamps = STAMPS;
-
-    let { tool = DEFAULT_TOOL, onPaletteChange } = $props();
-
-    const LS_TOOL_KEY = 'palette.tool';
-
-    const persist = () => {
-        try {
-            localStorage.setItem(LS_TOOL_KEY, JSON.stringify(tool));
-        } catch (_) {
-            // ignore storage errors (e.g., privacy mode)
-        }
-    }
-
-    onMount(() => {
-        try {
-            const savedTool = JSON.parse(localStorage.getItem(LS_TOOL_KEY) || '{}');
-
-            const parsedType = savedTool?.type as PaletteTool['type'] | null;
-            const validType = parsedType === 'line' || parsedType === 'stamp' ? parsedType : null;
-            const parsedColor = savedTool?.color as PaletteTool['color'] | null;
-            const validColor = savedTool?.color === 'black' || savedTool?.color === 'white' ? parsedColor : null;
-            const parsedSize = savedTool?.size ? parseInt(savedTool?.size, 10) : NaN;
-            const validSize = sizes.includes(parsedSize) || parsedSize === STAMP_SIZE ? parsedSize : null;
-            const parsedStamp = savedTool?.stamp as PaletteTool['stamp'] | null;
-            const validStamp = parsedType === 'stamp' && stamps.includes(parsedStamp ?? '') ? parsedStamp : null;
-
-            if (validType && validColor && validSize !== null) {
-                switch (validType) {
-                    case 'line': tool = { type: 'line', color: validColor, size: validSize, stamp: null }; break;
-                    case 'stamp': tool = { type: 'stamp', color: validColor, size: 31, stamp: validStamp }; break;
-                }
-            }
-
-            // Notify parent about the (possibly restored) selection
-            onPaletteChange?.(new PaletteChangeEvent(tool));
-        } catch (_) {
-            // If localStorage is unavailable, just emit current defaults
-            onPaletteChange?.(new PaletteChangeEvent(tool));
-        }
-    });
+    import { PaletteTool, tool, STAMPS, STAMP_SIZE, SIZES, stampUrl } from "./Palette";
 
     const selectTool = (e: MouseEvent) => {
         const target = e.currentTarget as HTMLElement;
         const type = target.dataset.type as PaletteTool['type'];
         const color = target.dataset.color as PaletteTool['color'];
         const size = parseInt(target.dataset.size as string);
+        const stamp = target.dataset.stamp as PaletteTool['stamp'];
 
         switch (type) {
             case 'line':
-                tool = {
-                    type: 'line',
-                    color: color,
-                    size: size,
-                    stamp: null
-                };
+                $tool = new PaletteTool('line', color, size);
                 break;
             case 'stamp':
-                tool = {
-                    type: 'stamp',
-                    color: color,
-                    size: STAMP_SIZE,
-                    stamp: target.dataset.stamp as PaletteTool['stamp']
-                };
+                $tool = new PaletteTool('stamp', color, STAMP_SIZE, stamp);
                 break;
         }
-
-        persist();
-        onPaletteChange?.(new PaletteChangeEvent(tool));
     }
 </script>
 
 <div class="palette">
-    <div class="blacks {tool?.color === 'black' ? 'active' : ''}">
-        {#each sizes as size}
+    <div class="blacks {$tool.color === 'black' ? 'active' : ''}">
+        {#each SIZES as size}
             <button title="Line of {size} pixels"
-                    class="{tool?.type === 'line' && tool?.size === size ? 'active' : ''}"
+                    class="{$tool.type === 'line' && $tool.size === size ? 'active' : ''}"
                     data-type="line"
                     data-color="black"
                     data-size="{size}"
                     onclick={selectTool}
             ><span></span></button>
         {/each}
-        {#each stamps as stamp}
+        {#each STAMPS as stamp}
             <button title="Black {stamp}"
-                    class="{tool?.stamp === stamp ? 'active' : ''}"
+                    class="{$tool.stamp === stamp ? 'active' : ''}"
                     data-type="stamp"
                     data-color="black"
                     data-stamp={stamp}
@@ -97,19 +41,19 @@
             ><img src={stampUrl('black', stamp)} alt={stamp}></button>
         {/each}
     </div>
-    <div class="whites {tool?.color === 'white' ? 'active' : ''}">
-        {#each sizes as s}
-            <button title="Line of {s} pixels"
-                    class="{tool?.type === 'line' && s === tool?.size ? 'active' : ''}"
+    <div class="whites {$tool.color === 'white' ? 'active' : ''}">
+        {#each SIZES as size}
+            <button title="Line of {size} pixels"
+                    class="{$tool.type === 'line' && $tool.size === size ? 'active' : ''}"
                     data-type="line"
                     data-color="white"
-                    data-size="{s}"
+                    data-size="{size}"
                     onclick={selectTool}
             ><span></span></button>
         {/each}
-        {#each stamps as stamp}
+        {#each STAMPS as stamp}
             <button title="White {stamp}"
-                    class="{tool?.stamp === stamp ? 'active' : ''}"
+                    class="{$tool.stamp === stamp ? 'active' : ''}"
                     data-type="stamp"
                     data-color="white"
                     data-stamp={stamp}
