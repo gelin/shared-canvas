@@ -37,6 +37,15 @@ export class PaletteTool {
     get stampUrl() {
         return `/stamps/${this.#color}-${this.#stamp}.svg`;
     }
+
+    toJSON() {
+        return {
+            type: this.#type,
+            color: this.#color,
+            size: this.#size,
+            stamp: this.#stamp,
+        };
+    }
 }
 
 export const stampUrl = (color: string, stamp: string): string => {
@@ -72,7 +81,7 @@ export const tool = writable(loadTool() || DEFAULT_TOOL)
 tool.subscribe((t) => {
     try {
         // TODO fix this
-        localStorage.setItem(LS_TOOL_KEY, JSON.stringify(t));
+        localStorage.setItem(LS_TOOL_KEY, JSON.stringify(t.toJSON()));
     } catch (_) {
         // ignore storage errors (e.g., privacy mode)
     }
