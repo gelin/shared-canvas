@@ -6,15 +6,15 @@ export const SIZES = [ 1, 3, 5, 7, 10, 15 ];
 
 export const STAMP_SIZE = 31;
 export const STAMP_HALF_SIZE = 16;
-export const STAMPS = [ 'star' ];
+export const STAMPS = [ 'star', 'heart' ];
 
 export class PaletteTool {
     readonly #type: 'line' | 'stamp';
     readonly #color: 'black' | 'white';
     readonly #size: number;
-    readonly #stamp: 'star' | null;
+    readonly #stamp: 'star' | 'heart' | null;
 
-    constructor(type: 'line' | 'stamp', color: 'black' | 'white', size: number, stamp: 'star' | null = null) {
+    constructor(type: 'line' | 'stamp', color: 'black' | 'white', size: number, stamp: 'star' | 'heart' | null = null) {
         this.#type = type;
         this.#color = color;
         this.#size = size;
