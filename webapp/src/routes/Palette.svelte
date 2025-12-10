@@ -68,12 +68,14 @@
     .palette {
         display: flex;
         flex-direction: row;
-        gap: 0.5rem;
+        flex-wrap: wrap;
+        gap: clamp(0.3rem, 0.5vw, 1rem);
     }
     .palette .blacks, .palette .whites {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        flex-wrap: wrap;
+        gap: clamp(0.3rem, 0.8vh, 2rem);
     }
     .palette button {
         flex-shrink: 0;
@@ -140,9 +142,11 @@
     @media (max-width: 800px) {
         .palette {
             flex-direction: column;
+            gap: clamp(0.3rem, 0.5vh, 1rem);
         }
         .palette .blacks, .palette .whites {
             flex-direction: row;
+            gap: clamp(0.3rem, 0.8vw, 2rem);
         }
     }
 </style>

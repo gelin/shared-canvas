@@ -70,54 +70,69 @@
         }
     });
 
-    const handleClick = ({ offsetX: x1, offsetY: y1 }: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
         if (!drawContext) return;
+        const coords = getMouseCanvasCoords(e);
+        if (!coords) return;
+
         initContext();
 
         switch ($tool.type) {
             case 'line':
                 drawContext.beginPath();
-                drawContext.moveTo(x1, y1);
-                drawContext.lineTo(x1, y1);
+                drawContext.moveTo(coords.x, coords.y);
+                drawContext.lineTo(coords.x, coords.y);
                 drawContext.stroke();
-                sendDrawLine(x1, y1, x1, y1);
+                sendDrawLine(coords.x, coords.y, coords.x, coords.y);
             break;
             case 'stamp':
-                drawContext.drawImage(stampImage, x1 - STAMP_HALF_SIZE, y1 - STAMP_HALF_SIZE);
-                sendDrawStamp(x1, y1);
+                drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
+                sendDrawStamp(coords.x, coords.y);
                 break;
         }
 
-        prev = { x: x1, y: y1 };
+        prev = coords;
     };
 
-    const handleMove = ({ offsetX: x1, offsetY: y1, buttons }: MouseEvent) => {
+    const handleMove = (e: MouseEvent & { buttons: number }) => {
         if (!drawContext) return;
         if ($tool.type !== 'line') return;
-        if (buttons == 1) {
+        const coords = getMouseCanvasCoords(e);
+        if (!coords) return;
+
+        if (e.buttons == 1) {
             if (isDrawing) {
-                const { x, y } = prev;
                 initContext();
                 drawContext.beginPath();
-                drawContext.moveTo(x, y);
-                drawContext.lineTo(x1, y1);
+                drawContext.moveTo(prev.x, prev.y);
+                drawContext.lineTo(coords.x, coords.y);
                 drawContext.stroke();
 
-                sendDrawLine(x, y, x1, y1);
-
-                prev = { x: x1, y: y1 };
+                sendDrawLine(prev.x, prev.y, coords.x, coords.y);
             } else {
                 isDrawing = true;
-                prev = { x: x1, y: y1 };
             }
+            prev = coords;
         } else {
             isDrawing = false;
         }
     };
 
+    const getMouseCanvasCoords = (e: MouseEvent): { x: number; y: number } | null => {
+        if (!drawCanvas) return null;
+        const rect = drawCanvas.getBoundingClientRect();
+        const scaleX = drawCanvas.width / rect.width;
+        const scaleY = drawCanvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY,
+        };
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
-        const coords = toCanvasCoords(e);
+        const coords = getTouchCanvasCoords(e);
         if (!coords) return;
+
         prev = coords;
         isDrawing = true;
         if ($tool.type === 'stamp') {
@@ -129,7 +144,7 @@
     };
 
     const handleTouch = (e: TouchEvent) => {
-        const coords = toCanvasCoords(e);
+        const coords = getTouchCanvasCoords(e);
         if (!coords) return;
 
         if ($tool.type === 'line') {
@@ -145,11 +160,16 @@
         prev = coords;
     };
 
-    const toCanvasCoords = ({ touches }: TouchEvent): { x: number; y: number } | null => {
+    const getTouchCanvasCoords = ({ touches }: TouchEvent): { x: number; y: number } | null => {
         if (touches.length === 0) return null;
         if (!drawCanvas) return null;
         const rect = drawCanvas.getBoundingClientRect();
-        return { x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top };
+        const scaleX = drawCanvas.width / rect.width;
+        const scaleY = drawCanvas.height / rect.height;
+        return {
+            x: (touches[0].clientX - rect.left) * scaleX,
+            y: (touches[0].clientY - rect.top) * scaleY,
+        };
     };
 
     const handleEnd = () => {
@@ -202,37 +222,47 @@
 {#if !ready}
 <p class="loading" transition:fade>Loading...</p>
 {/if}
-<canvas id="drawCanvas"
-        bind:this={drawCanvas}
-        {width}
-        {height}
-        style="width: {width}px; height: {height}px; cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
-        onclick={handleClick}
-        onmousemove={handleMove}
-        onmouseleave={handleEnd}
-        ontouchstart={handleTouchStart}
-        ontouchmove={handleTouch}
-        ontouchend={handleEnd}
-></canvas>
-<canvas
-        id="mainCanvas"
-        bind:this={viewCanvas}
-        {width}
-        {height}
-        style="width: {width}px; height: {height}px;"
-></canvas>
+<div class="canvas-wrap" style="max-width: {width}px;">
+    <canvas id="drawCanvas"
+            bind:this={drawCanvas}
+            {width}
+            {height}
+            style="cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
+            onclick={handleClick}
+            onmousemove={handleMove}
+            onmouseleave={handleEnd}
+            ontouchstart={handleTouchStart}
+            ontouchmove={handleTouch}
+            ontouchend={handleEnd}
+    ></canvas>
+    <canvas
+            id="mainCanvas"
+            bind:this={viewCanvas}
+            {width}
+            {height}
+    ></canvas>
+</div>
 
 <style>
+    .canvas-wrap {
+        position: relative;
+        width: 100%;
+        /* prevent accidental horizontal scroll around the canvas */
+        overflow: hidden;
+    }
+
     #drawCanvas {
         /*border: 1px solid blue;*/
         /*background: white;*/
         position: absolute;
+        top: 0;
+        left: 0;
         cursor: crosshair;
     }
 
     .loading {
         position: absolute;
-        width: 400px;
+        width: 100%;
         color: black;
         padding: 0 1rem;
         font-size: 1.8rem;
@@ -240,6 +270,9 @@
     }
 
     canvas {
+        display: block;
+        width: 100%;
+        height: auto;
         transition: width 0.3s ease-in-out, height 0.5s ease-in-out;
     }
 </style>
