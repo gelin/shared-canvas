@@ -217,6 +217,14 @@
         viewContext.putImageData(e.data, 0, 0);
         ready = true;
     };
+
+    export const download = () => {
+        if (!viewCanvas) return;
+        const link = document.createElement('a');
+        link.download = 'canvas.png';
+        link.href = viewCanvas.toDataURL();
+        link.click();
+    }
 </script>
 
 <div class="canvas-wrap" style="max-width: {width}px;">
