@@ -114,6 +114,9 @@
         width: 15px;
         height: 15px;
     }
+    .palette button img {
+        width: 25px;
+    }
     .palette .blacks button {
         background: color-mix(in oklab, canvas, canvasText 20%);
     }
@@ -136,7 +139,7 @@
         background: color-mix(in oklab, canvas, canvasText 40%);
     }
     .palette .whites.active button.active {
-        border: 1px solid canvasText;
+        border: 2px solid canvasText;
     }
 
     @media (max-width: 800px) {

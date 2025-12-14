@@ -219,15 +219,15 @@
     };
 </script>
 
-{#if !ready}
-<p class="loading" transition:fade>Loading...</p>
-{/if}
 <div class="canvas-wrap" style="max-width: {width}px;">
+    {#if !ready}
+        <p class="loading" transition:fade>Loading...</p>
+    {/if}
     <canvas id="drawCanvas"
             bind:this={drawCanvas}
             {width}
             {height}
-            style="cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
+            style="max-width: {width}px; cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
             onclick={handleClick}
             onmousemove={handleMove}
             onmouseleave={handleEnd}
@@ -236,10 +236,11 @@
             ontouchend={handleEnd}
     ></canvas>
     <canvas
-            id="mainCanvas"
+            id="viewCanvas"
             bind:this={viewCanvas}
             {width}
             {height}
+            style="max-width: {width}px;"
     ></canvas>
 </div>
 
@@ -249,6 +250,18 @@
         width: 100%;
         /* prevent accidental horizontal scroll around the canvas */
         overflow: hidden;
+        transition: max-width 0.3s ease-in-out;
+    }
+
+    .loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        color: black;
+        padding: 0 1rem;
+        font-size: 1.8rem;
+        text-align: center;
     }
 
     #drawCanvas {
@@ -260,19 +273,10 @@
         cursor: crosshair;
     }
 
-    .loading {
-        position: absolute;
-        width: 100%;
-        color: black;
-        padding: 0 1rem;
-        font-size: 1.8rem;
-        text-align: center;
-    }
-
     canvas {
         display: block;
         width: 100%;
         height: auto;
-        transition: width 0.3s ease-in-out, height 0.5s ease-in-out;
+        transition: max-width 0.3s ease-in-out;
     }
 </style>
