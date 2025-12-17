@@ -1,8 +1,11 @@
 import { writable, type Readable } from 'svelte/store';
 
 export type WSStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type WSMessage = WSInitMessage | WSDrawMessage | WSUserMessage;
+export type WSInitMessage = { method: 'init'; params: { w: number; h: number; p: string }; };
 export type WSDrawMessage = { method: 'draw'; params: { x: number; y: number; w: number; h: number; p: string }; };
-export type WSCallback = (msg: WSDrawMessage) => void;
+export type WSUserMessage = { method: 'user'; params: { count: number; }; };
+export type WSCallback = (msg: WSMessage) => void;
 
 function wsURL(): string {
     const { protocol, host } = window.location;
@@ -36,7 +39,7 @@ class WSClient {
 
         ws.onmessage = (ev) => {
             try {
-                const data = JSON.parse(ev.data) as WSDrawMessage;
+                const data = JSON.parse(ev.data) as WSMessage;
                 for (const cb of this.subscribers) {
                     cb(data);
                 }

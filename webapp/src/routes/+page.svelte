@@ -2,35 +2,36 @@
     import Canvas from "./Canvas.svelte";
     import ConnectionIndicator from "./ConnectionIndicator.svelte";
     import Palette from "./Palette.svelte";
-    import { DEFAULT_TOOL, type PaletteChangeEvent } from "./Palette";
+    import UserCountIndicator from "./UserCountIndicator.svelte";
 
-    let canvas: Canvas;
-    let tool = $state(DEFAULT_TOOL);
+    let canvas: Canvas | null = null;
 </script>
 
 <section class="card info">
     <nav>
         <div class="left">
-            <p>Draw with the mouse on the canvas below.</p>
+            <p>Draw with the mouse on the canvas below</p>
         </div>
         <div class="right">
             <button class="download" title="Download" onclick={() => canvas?.download()}><span class="material-symbols-outlined">download</span></button>
+            <UserCountIndicator/>
             <ConnectionIndicator/>
         </div>
     </nav>
 </section>
 
 <section class="card main">
-    <Canvas {tool} bind:this={canvas}/>
-    <Palette onPaletteChange={(e: PaletteChangeEvent) => {
-        tool = e.tool;
-    }}/>
+    <Canvas bind:this={canvas}/>
+    <Palette/>
 </section>
 
 <style>
     .info {
         font-size: 80%;
         padding: 0 1rem;
+    }
+    .info p {
+        margin: auto 0;
     }
     .info nav, .info nav div {
         display: flex;
@@ -47,6 +48,9 @@
         color: inherit;
         padding: 0;
         cursor: pointer;
+    }
+    #user-count {
+        min-width: 3rem;
     }
 
     .main {

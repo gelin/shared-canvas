@@ -2,7 +2,7 @@
     import { onMount, tick } from 'svelte';
     import { fade } from 'svelte/transition';
     import { type DrawEvent, eventToMessage, messageToEvent } from "$lib/ws-canvas";
-    import { wsClient, type WSDrawMessage } from "$lib/ws";
+    import { wsClient, type WSMessage } from "$lib/ws";
     import { tool, STAMP_HALF_SIZE, STAMP_SIZE } from "./Palette";
 
     const socket = wsClient;
@@ -20,7 +20,7 @@
     let isDrawing = false;
     let prev = { x: 0, y: 0 };
 
-    let stampImage: Image | null;
+    let stampImage: HTMLImageElement | null;
 
     onMount(() => {
         viewContext = viewCanvas.getContext('2d', {
@@ -32,11 +32,10 @@
         initCanvas();
 
         socket.connect();
-        socket.subscribe((message: WSDrawMessage) => {
-            if (message.method === 'draw') {
-                onDrawMessage(messageToEvent(message));
-            } else if (message.method === 'init') {
-                onInitMessage(messageToEvent(message));
+        socket.subscribe((message: WSMessage) => {
+            switch (message.method) {
+                case 'init': onInitMessage(messageToEvent(message)); break;
+                case 'draw': onDrawMessage(messageToEvent(message)); break;
             }
         });
     });
@@ -84,10 +83,12 @@
                 drawContext.lineTo(coords.x, coords.y);
                 drawContext.stroke();
                 sendDrawLine(coords.x, coords.y, coords.x, coords.y);
-            break;
+                break;
             case 'stamp':
-                drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
-                sendDrawStamp(coords.x, coords.y);
+                if (stampImage) {
+                    drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
+                    sendDrawStamp(coords.x, coords.y);
+                }
                 break;
         }
 
@@ -137,6 +138,7 @@
         isDrawing = true;
         if ($tool.type === 'stamp') {
             if (!drawContext) return;
+            if (!stampImage) return;
             initContext();
             drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
             sendDrawStamp(coords.x, coords.y);

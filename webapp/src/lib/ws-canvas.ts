@@ -1,4 +1,4 @@
-import type { WSDrawMessage } from "$lib/ws";
+import type { WSDrawMessage, WSInitMessage } from "$lib/ws";
 
 export type DrawEvent = {
     x: number,
@@ -39,13 +39,12 @@ const encodeImageData = (data: ImageDataArray) => {
     return result;
 }
 
-export const messageToEvent = (m: WSDrawMessage): DrawEvent => {
+export const messageToEvent = (m: WSDrawMessage | WSInitMessage): DrawEvent => {
     const dataArray = decodeImageData(m.params.p);
     const imageData = new ImageData(dataArray, m.params.w, m.params.h);
-    return {
-        x: m.params.x,
-        y: m.params.y,
-        data: imageData,
+    switch (m.method) {
+        case 'init': return { x: 0, y: 0, data: imageData };
+        case 'draw': return { x: m.params.x, y: m.params.y, data: imageData };
     }
 }
 
