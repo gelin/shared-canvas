@@ -22,6 +22,7 @@
 <style>
     .user-count {
         font-size: 1.4rem;
+        text-align: end;
         padding: 0;
         margin: auto 0;
     }

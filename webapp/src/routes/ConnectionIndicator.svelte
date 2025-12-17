@@ -4,7 +4,7 @@
     const status = wsClient.status;
 </script>
 
-<p>
+<p id="connection-indicator" class="connection-indicator">
 {#if $status === 'disconnected'}
     <span class="disconnected" title="Disconnected">⚫</span>
 {:else if $status === 'connecting'}
@@ -17,7 +17,9 @@
 </p>
 
 <style>
-    p {
+    .connection-indicator {
         cursor: default;
+        padding: 0;
+        margin: auto 0;
     }
 </style>

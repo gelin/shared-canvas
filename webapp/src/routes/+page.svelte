@@ -28,7 +28,7 @@
 <style>
     .info {
         font-size: 80%;
-        padding: 0 1rem;
+        padding: 0.3rem 1rem;
     }
     .info p {
         margin: auto 0;
@@ -41,16 +41,22 @@
     .info nav .right {
         gap: 0.5rem;
     }
+
     .download {
-        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 48;
+        font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 32;
         background: none;
         border: none;
         color: inherit;
         padding: 0;
+        margin: auto 0;
         cursor: pointer;
     }
-    #user-count {
-        min-width: 3rem;
+    .material-symbols-outlined {
+        font-size: 1.4rem;
+    }
+
+    :global(.user-count) {
+        width: 2rem;
     }
 
     .main {
