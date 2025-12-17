@@ -57,6 +57,19 @@ Sent by SPA to the server and broadcast to all connected clients.
 
 `p` is the pixel array encoded: `_` for transparent, `0` for black, `1` for white.
 
+#### user
+
+Sent by the server to the SPA to notify the number of connected users.
+
+```json
+{
+  "method": "user",
+  "params": {
+    "count": 10
+  }
+}
+```
+
 ## Requirements
 
 - Go 1.21+

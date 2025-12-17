@@ -80,7 +80,6 @@ export const tool = writable(loadTool() || DEFAULT_TOOL)
 
 tool.subscribe((t) => {
     try {
-        // TODO fix this
         localStorage.setItem(LS_TOOL_KEY, JSON.stringify(t.toJSON()));
     } catch (_) {
         // ignore storage errors (e.g., privacy mode)

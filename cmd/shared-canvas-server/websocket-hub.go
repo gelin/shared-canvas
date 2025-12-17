@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 
 	"nhooyr.io/websocket"
@@ -40,12 +41,16 @@ func (h *WebSocketHub) run() {
 		case c := <-h.Register:
 			h.clients[c] = struct{}{}
 			log.Printf("ws: client registered (%s), total=%d", c.Id, len(h.clients))
+			// Notify all clients about the new user count
+			h.broadcastUserCount()
 		case c := <-h.Unregister:
 			if _, ok := h.clients[c]; ok {
 				delete(h.clients, c)
 				close(c.Send) // signal writer to exit
 				_ = c.Conn.Close(websocket.StatusNormalClosure, "bye")
 				log.Printf("ws: client unregistered (%s), total=%d", c.Id, len(h.clients))
+				// Notify all clients about the new user count
+				h.broadcastUserCount()
 			}
 		case msg := <-h.Broadcast:
 			for c := range h.clients {
@@ -59,6 +64,30 @@ func (h *WebSocketHub) run() {
 					_ = c.Conn.Close(websocket.StatusPolicyViolation, "slow consumer")
 				}
 			}
+		}
+	}
+}
+
+// broadcastUserCount sends a JSON message with the current number of connected users
+// to all clients, using the same non-blocking behaviour as for normal broadcasts.
+func (h *WebSocketHub) broadcastUserCount() {
+	// Build the message: { "method": "user", "params": { "count": N }}
+	payload := map[string]any{
+		"method": "user",
+		"params": map[string]any{
+			"count": len(h.clients),
+		},
+	}
+	data, _ := json.Marshal(payload)
+
+	for c := range h.clients {
+		select {
+		case c.Send <- data:
+		default:
+			log.Printf("ws: client buffer full, disconnecting (%s)", c.Id)
+			delete(h.clients, c)
+			close(c.Send)
+			_ = c.Conn.Close(websocket.StatusPolicyViolation, "slow consumer")
 		}
 	}
 }
