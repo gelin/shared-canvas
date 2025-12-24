@@ -237,7 +237,7 @@
             bind:this={drawCanvas}
             {width}
             {height}
-            style="max-width: {width}px; cursor: {$tool.type === 'stamp' ? `url(${$tool.stampUrl}) ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
+            style="max-width: {width}px; cursor: {$tool.type === 'stamp' ? `url('${$tool.stampUrl}') ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
             onclick={handleClick}
             onmousemove={handleMove}
             onmouseleave={handleEnd}

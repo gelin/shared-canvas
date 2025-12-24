@@ -20,6 +20,7 @@
 </script>
 
 <div class="palette">
+    <!-- TODO: change layout: instead of two columns have a single column of black-white pairs -->
     <div class="blacks {$tool.color === 'black' ? 'active' : ''}">
         {#each SIZES as size}
             <button title="Line of {size} pixels"
@@ -38,7 +39,7 @@
                     data-stamp={stamp}
                     data-size={STAMP_SIZE}
                     onclick={selectTool}
-            ><img src={stampUrl('black', stamp)} alt={stamp}></button>
+            ><img src={stampUrl('black',stamp)} alt={stamp}></button>
         {/each}
     </div>
     <div class="whites {$tool.color === 'white' ? 'active' : ''}">
@@ -59,7 +60,7 @@
                     data-stamp={stamp}
                     data-size={STAMP_SIZE}
                     onclick={selectTool}
-            ><img src={stampUrl('white', stamp)} alt={stamp}></button>
+            ><img src={stampUrl('white',stamp)} alt={stamp}></button>
         {/each}
     </div>
 </div>

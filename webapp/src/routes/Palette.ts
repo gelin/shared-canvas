@@ -1,20 +1,30 @@
 import { writable } from "svelte/store";
 
+export type Type = 'line' | 'stamp';
+
 export const COLORS = [ 'black', 'white' ];
+export type Color = typeof COLORS[number];
 
 export const SIZES = [ 1, 3, 5, 7, 10, 15 ];
 
 export const STAMP_SIZE = 31;
 export const STAMP_HALF_SIZE = 16;
+export const STAMP_FONT_SIZE = 35;
+
 export const STAMPS = [ 'star', 'heart' ];
+export type Stamp = typeof STAMPS[number];
+const STAMP_GLYPHS : Record<Stamp, string> = {
+    star: '★',
+    heart: '♥',
+}
 
 export class PaletteTool {
-    readonly #type: 'line' | 'stamp';
-    readonly #color: 'black' | 'white';
+    readonly #type: Type;
+    readonly #color: Color;
     readonly #size: number;
-    readonly #stamp: 'star' | 'heart' | null;
+    readonly #stamp: Stamp | null;
 
-    constructor(type: 'line' | 'stamp', color: 'black' | 'white', size: number, stamp: 'star' | 'heart' | null = null) {
+    constructor(type: Type, color: Color, size: number, stamp: Stamp | null = null) {
         this.#type = type;
         this.#color = color;
         this.#size = size;
@@ -35,7 +45,8 @@ export class PaletteTool {
     }
 
     get stampUrl() {
-        return `/stamps/${this.#color}-${this.#stamp}.svg`;
+        if (this.#type !== 'stamp') return null;
+        return stampUrl(this.#color, this.#stamp);
     }
 
     toJSON() {
@@ -48,8 +59,12 @@ export class PaletteTool {
     }
 }
 
-export const stampUrl = (color: string, stamp: string): string => {
-    return `/stamps/${color}-${stamp}.svg`;
+export const stampUrl = (color: Color, stamp: Stamp | null): string | null => {
+    if (!stamp) return null;
+    const glyph = STAMP_GLYPHS[stamp];
+    if (!glyph) return null;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${STAMP_SIZE}" height="${STAMP_SIZE}" viewBox="0 0 ${STAMP_SIZE} ${STAMP_SIZE}"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="sans-serif" font-size="${STAMP_FONT_SIZE}" fill="${color}">${glyph}</text></svg>`;
+    return `data:image/svg+xml;utf8,${svg}`;
 };
 
 export const DEFAULT_TOOL: PaletteTool = new PaletteTool('line', 'black', 3);
