@@ -163,7 +163,7 @@
     };
 
     const getTouchCanvasCoords = ({ touches }: TouchEvent): { x: number; y: number } | null => {
-        if (touches.length === 0) return null;
+        if (touches.length !== 1) return null;  // ignoring multi-touch too
         if (!drawCanvas) return null;
         const rect = drawCanvas.getBoundingClientRect();
         const scaleX = drawCanvas.width / rect.width;
@@ -261,6 +261,8 @@
         /* prevent accidental horizontal scroll around the canvas */
         overflow: hidden;
         transition: max-width 0.3s ease-in-out;
+        /* allow only zoom with two fingers, no moves, as moves are for drawing */
+        touch-action: pinch-zoom;
     }
 
     .loading {
