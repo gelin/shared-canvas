@@ -28,7 +28,7 @@
 <style>
     .info {
         font-size: 80%;
-        padding: 0.3rem 1rem;
+        padding: clamp(0.1rem, 3vw, 0.5rem) clamp(0.1rem, 6vw, 1rem);
     }
     .info p {
         margin: auto 0;
@@ -63,7 +63,7 @@
         margin-top: 1rem;
         display: flex;
         flex-direction: row;
-        gap: 1rem;
+        gap: clamp(0.5rem, 6vw, 1rem);
     }
 
     @media (max-width: 800px) {

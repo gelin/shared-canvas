@@ -33,7 +33,7 @@ main {
     background: color-mix(in oklab, canvas, canvasText 7%);
     border: 1px solid color-mix(in oklab, canvasText, transparent 88%);
     border-radius: 12px;
-    padding: 1rem;
+    padding: clamp(0.1rem, 5vw, 1rem);
 }
 
 button {
