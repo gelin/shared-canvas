@@ -143,15 +143,6 @@
             handleEnd();
             return;
         }
-
-        if ($tool.type === 'stamp') {
-            if (!drawContext) return;
-            if (!stampImage) return;
-            initContext();
-            drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
-            sendDrawStamp(coords.x, coords.y);
-        }
-
         isDrawing = true;
         prev = coords;
     };
