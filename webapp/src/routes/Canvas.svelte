@@ -18,7 +18,8 @@
     let drawContext: CanvasRenderingContext2D | null;
 
     let isDrawing = false;
-    let prev = { x: 0, y: 0 };
+    let prev = null as { x: number, y: number } | null;
+    let lastMultiTouchTime = 0;
 
     let stampImage: HTMLImageElement | null;
 
@@ -60,19 +61,23 @@
     };
 
     tool.subscribe((t) => {
-        if (t.type === 'stamp') {
+        const stampUrl = t.stampUrl;
+        if (t.type === 'stamp' && stampUrl) {
             const img = new Image();
-            img.src = t.stampUrl;
+            img.src = stampUrl;
             stampImage = img;
         } else {
             stampImage = null;
         }
     });
 
-    const handleClick = (e: MouseEvent) => {
+    const handleMouseClick = (e: MouseEvent) => {
         if (!drawContext) return;
         const coords = getMouseCanvasCoords(e);
-        if (!coords) return;
+        if (!coords) {
+            handleEnd();
+            return;
+        }
 
         initContext();
 
@@ -95,14 +100,17 @@
         prev = coords;
     };
 
-    const handleMove = (e: MouseEvent & { buttons: number }) => {
+    const handleMouseMove = (e: MouseEvent & { buttons: number }) => {
+        const coords = getMouseCanvasCoords(e);
+        if (!coords) {
+            handleEnd();
+            return;
+        }
         if (!drawContext) return;
         if ($tool.type !== 'line') return;
-        const coords = getMouseCanvasCoords(e);
-        if (!coords) return;
 
         if (e.buttons == 1) {
-            if (isDrawing) {
+            if (isDrawing && prev) {
                 initContext();
                 drawContext.beginPath();
                 drawContext.moveTo(prev.x, prev.y);
@@ -110,12 +118,11 @@
                 drawContext.stroke();
 
                 sendDrawLine(prev.x, prev.y, coords.x, coords.y);
-            } else {
-                isDrawing = true;
             }
+            isDrawing = true;
             prev = coords;
         } else {
-            isDrawing = false;
+            handleEnd();
         }
     };
 
@@ -132,10 +139,11 @@
 
     const handleTouchStart = (e: TouchEvent) => {
         const coords = getTouchCanvasCoords(e);
-        if (!coords) return;
+        if (!coords) {
+            handleEnd();
+            return;
+        }
 
-        prev = coords;
-        isDrawing = true;
         if ($tool.type === 'stamp') {
             if (!drawContext) return;
             if (!stampImage) return;
@@ -143,28 +151,46 @@
             drawContext.drawImage(stampImage, coords.x - STAMP_HALF_SIZE, coords.y - STAMP_HALF_SIZE);
             sendDrawStamp(coords.x, coords.y);
         }
+
+        isDrawing = true;
+        prev = coords;
     };
 
-    const handleTouch = (e: TouchEvent) => {
+    const handleTouchMove = (e: TouchEvent) => {
         const coords = getTouchCanvasCoords(e);
-        if (!coords) return;
+        if (!coords) {
+            handleEnd();
+            return;
+        }
 
         if ($tool.type === 'line') {
             if (!drawContext) return null;
-            initContext();
-            drawContext.beginPath();
-            drawContext.moveTo(prev.x, prev.y);
-            drawContext.lineTo(coords.x, coords.y);
-            drawContext.stroke();
-            sendDrawLine(prev.x, prev.y, coords.x, coords.y);
+            if (isDrawing && prev) {
+                initContext();
+                drawContext.beginPath();
+                drawContext.moveTo(prev.x, prev.y);
+                drawContext.lineTo(coords.x, coords.y);
+                drawContext.stroke();
+                sendDrawLine(prev.x, prev.y, coords.x, coords.y);
+            }
         }
 
+        isDrawing = true;
         prev = coords;
     };
 
     const getTouchCanvasCoords = ({ touches }: TouchEvent): { x: number; y: number } | null => {
-        if (touches.length !== 1) return null;  // ignoring multi-touch too
+        if (touches.length !== 1) {
+            // ignoring multi-touch events
+            lastMultiTouchTime = Date.now();
+            return null;
+        }
+        if (Date.now() - lastMultiTouchTime < 500) {
+            // 500ms cooldown after multi-touch events
+            return null;
+        }
         if (!drawCanvas) return null;
+
         const rect = drawCanvas.getBoundingClientRect();
         const scaleX = drawCanvas.width / rect.width;
         const scaleY = drawCanvas.height / rect.height;
@@ -176,6 +202,7 @@
 
     const handleEnd = () => {
         isDrawing = false;
+        prev = null;
     };
 
     const sendDrawLine = (x0: number, y0: number, x1: number, y1: number) => {
@@ -238,11 +265,11 @@
             {width}
             {height}
             style="max-width: {width}px; cursor: {$tool.type === 'stamp' ? `url('${$tool.stampUrl}') ${STAMP_HALF_SIZE} ${STAMP_HALF_SIZE},` : ''} crosshair;"
-            onclick={handleClick}
-            onmousemove={handleMove}
+            onclick={handleMouseClick}
+            onmousemove={handleMouseMove}
             onmouseleave={handleEnd}
             ontouchstart={handleTouchStart}
-            ontouchmove={handleTouch}
+            ontouchmove={handleTouchMove}
             ontouchend={handleEnd}
     ></canvas>
     <canvas
