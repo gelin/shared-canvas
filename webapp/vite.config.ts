@@ -33,6 +33,22 @@ export default defineConfig({
                         sizes: '1024x1024',
                         type: 'image/png',
                     }
+                ],
+                screenshots: [
+                    {
+                        src: 'screenshot-mobile.png',
+                        sizes: '1024x1512',
+                        type: 'image/png',
+                        form_factor: 'narrow',
+                        label: 'Shared Canvas on mobile'
+                    },
+                    {
+                        src: 'screenshot-desktop.png',
+                        sizes: '2048x1572',
+                        type: 'image/png',
+                        form_factor: 'wide',
+                        label: 'Shared Canvas on desktop'
+                    }
                 ]
             }
         })
